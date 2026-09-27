@@ -1,0 +1,181 @@
+{% extends "core/base.html" %}
+
+{% block title %}
+Sign Up | AjiraSafe
+{% endblock %}
+
+{% block content %}
+
+<section class="auth-page">
+
+    <div class="auth-container">
+
+        <div class="auth-card">
+
+            <div class="auth-header">
+
+                <p class="section-label">JOIN AJIRASAFE</p>
+
+                <h1>Create Your Account</h1>
+
+                <p>
+                    Create an account to assess online job advertisements
+                    and make informed decisions before applying.
+                </p>
+
+            </div>
+
+            <form method="POST" class="auth-form">
+
+                {% csrf_token %}
+
+                <div class="form-group">
+
+                    <label for="name">
+                        Name
+                    </label>
+
+                    <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        placeholder="Enter your name"
+                        required
+                    >
+
+                </div>
+
+                <div class="form-group">
+
+                    <label for="email">
+                        Email
+                    </label>
+
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        placeholder="Enter your email"
+                        required
+                    >
+
+                </div>
+
+                <div class="form-group">
+
+                    <label for="password">
+                        Password
+                    </label>
+
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        placeholder="Enter your password"
+                        required
+                    >
+
+                </div>
+
+                <div class="form-group">
+
+                    <label for="confirm-password">
+                        Confirm Password
+                    </label>
+
+                    <input
+                        type="password"
+                        id="confirm-password"
+                        name="confirm_password"
+                        placeholder="Confirm your password"
+                        required
+                    >
+
+                </div>
+
+                <div class="login-options">
+
+                    <label class="checkbox-option">
+
+                        <input
+                            type="checkbox"
+                            id="show-password"
+                        >
+
+                        <span>
+                            Show password
+                        </span>
+
+                    </label>
+
+                </div>
+
+                <button
+                    type="submit"
+                    class="auth-button"
+                >
+                    Sign Up
+                </button>
+
+            </form>
+
+            <div class="auth-footer">
+
+                <span>
+                    Already have an account?
+                </span>
+
+                <a
+                    href="{% url 'login' %}"
+                    class="sign-in-link"
+                >
+                    Sign In
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+{% endblock %}
+
+
+{% block extra_js %}
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    const checkbox = document.getElementById("show-password");
+    const password = document.getElementById("password");
+    const confirmPassword =
+        document.getElementById("confirm-password");
+
+    if (checkbox) {
+
+        checkbox.addEventListener("change", function () {
+
+            if (this.checked) {
+
+                password.type = "text";
+                confirmPassword.type = "text";
+
+            } else {
+
+                password.type = "password";
+                confirmPassword.type = "password";
+
+            }
+
+        });
+
+    }
+
+});
+
+</script>
+
+{% endblock %}

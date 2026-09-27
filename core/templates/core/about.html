@@ -1,0 +1,333 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}
+AjiraSafe | About Us
+{% endblock %}
+
+
+{% block content %}
+
+<!-- =====================================================
+     ABOUT HERO
+====================================================== -->
+
+<section class="about-page-hero">
+
+    <div class="container about-page-hero-container">
+
+        <div class="about-page-hero-content">
+
+            <div class="section-label">
+                ABOUT AJIRASAFE
+            </div>
+
+            <h1>
+                Helping job seekers
+                <span>navigate online opportunities safely.</span>
+            </h1>
+
+            <p>
+                AjiraSafe is designed to help job seekers make more
+                informed decisions by providing job risk assessment,
+                employer verification information and understandable
+                explanations before they apply.
+            </p>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =====================================================
+     ABOUT INTRODUCTION
+====================================================== -->
+
+<section class="section about-introduction">
+
+    <div class="container about-introduction-grid">
+
+        <div>
+
+            <div class="section-label">
+                OUR PURPOSE
+            </div>
+
+            <h2>
+                A safer way to
+                <span>assess online jobs.</span>
+            </h2>
+
+        </div>
+
+
+        <div>
+
+            <p>
+                Online recruitment provides access to many employment
+                opportunities, but job seekers may also encounter
+                advertisements containing misleading information,
+                suspicious requests or other potential warning signs.
+            </p>
+
+            <p>
+                AjiraSafe brings job advertisement analysis and
+                employer verification together to provide useful
+                information that can support a more informed decision
+                before applying.
+            </p>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =====================================================
+     VISUAL SECTION
+====================================================== -->
+
+<section class="about-visual-section">
+
+    <div class="container">
+
+        <div class="about-photo-panel">
+
+            <div class="about-photo-overlay">
+
+                <span>
+                    AJIRASAFE
+                </span>
+
+                <h2>
+                    Assess before
+                    you apply.
+                </h2>
+
+                <p>
+                    More information can lead to better-informed
+                    decisions.
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =====================================================
+     MISSION / VISION
+====================================================== -->
+
+<section class="section mission-section">
+
+    <div class="container mission-grid">
+
+        <div class="mission-card">
+
+            <div class="mission-number">
+                01
+            </div>
+
+            <div class="section-label">
+                OUR MISSION
+            </div>
+
+            <h2>
+                Promote safer
+                online job decisions.
+            </h2>
+
+            <p>
+                To provide job seekers with accessible information
+                that helps them identify potential risks, verify
+                available employer information and make more informed
+                decisions about online employment opportunities.
+            </p>
+
+        </div>
+
+
+        <div class="mission-card featured-mission">
+
+            <div class="mission-number">
+                02
+            </div>
+
+            <div class="section-label">
+                OUR VISION
+            </div>
+
+            <h2>
+                A more trustworthy
+                online recruitment environment.
+            </h2>
+
+            <p>
+                We envision an online recruitment environment where
+                job seekers can evaluate opportunities with greater
+                awareness, confidence and access to relevant risk
+                information.
+            </p>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =====================================================
+     VALUES
+====================================================== -->
+
+<section class="section values-section">
+
+    <div class="container">
+
+        <div class="section-heading centered-heading">
+
+            <div class="section-label">
+                OUR VALUES
+            </div>
+
+            <h2>
+                What guides
+                <span>AjiraSafe.</span>
+            </h2>
+
+        </div>
+
+
+        <div class="values-grid">
+
+            <div class="value-card">
+
+                <div class="value-icon">
+                    ✓
+                </div>
+
+                <h3>
+                    Safety
+                </h3>
+
+                <p>
+                    We prioritize helping job seekers recognize
+                    potential risks before taking action.
+                </p>
+
+            </div>
+
+
+            <div class="value-card">
+
+                <div class="value-icon">
+                    ◉
+                </div>
+
+                <h3>
+                    Transparency
+                </h3>
+
+                <p>
+                    We aim to present risk information in a clear
+                    and understandable way.
+                </p>
+
+            </div>
+
+
+            <div class="value-card">
+
+                <div class="value-icon">
+                    !
+                </div>
+
+                <h3>
+                    Awareness
+                </h3>
+
+                <p>
+                    We encourage users to recognize warning signs
+                    associated with suspicious job opportunities.
+                </p>
+
+            </div>
+
+
+            <div class="value-card">
+
+                <div class="value-icon">
+                    ◆
+                </div>
+
+                <h3>
+                    Trust
+                </h3>
+
+                <p>
+                    We promote informed decision-making through
+                    useful job and employer information.
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =====================================================
+     ABOUT CTA
+====================================================== -->
+
+<section class="cta">
+
+    <div class="container cta-container">
+
+        <div class="cta-content">
+
+            <div class="section-label cta-label">
+                START WITH AJIRASAFE
+            </div>
+
+            <h2>
+                Don't apply blindly.
+                <span>Assess the opportunity first.</span>
+            </h2>
+
+            <p>
+                Create an account and start assessing online job
+                advertisements before you apply.
+            </p>
+
+            <div class="cta-buttons">
+
+                <a href="{% url 'signup' %}"
+                   class="btn btn-light btn-large">
+
+                    Get Started
+
+                    <span class="btn-arrow">
+                        →
+                    </span>
+
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+{% endblock %}

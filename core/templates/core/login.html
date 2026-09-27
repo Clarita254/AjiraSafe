@@ -1,0 +1,164 @@
+{% extends "core/base.html" %}
+
+{% block title %}
+Login | AjiraSafe
+{% endblock %}
+
+{% block content %}
+
+<section class="auth-page">
+
+    <div class="auth-container">
+
+        <div class="auth-card">
+
+            <div class="auth-header">
+
+                <p class="section-label">WELCOME BACK</p>
+
+                <h1>Sign In</h1>
+
+                <p>
+                    Sign in to your AjiraSafe account to verify
+                    and assess job opportunities.
+                </p>
+
+            </div>
+
+            <form method="POST" class="auth-form">
+
+                {% csrf_token %}
+
+                <div class="form-group">
+
+                    <label for="email">
+                        Email
+                    </label>
+
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        placeholder="Enter your email address"
+                        required
+                    >
+
+                </div>
+
+                <div class="form-group">
+
+                    <label for="password">
+                        Password
+                    </label>
+
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        placeholder="Enter your password"
+                        required
+                    >
+
+                </div>
+
+                <div class="login-options">
+
+                    <label class="checkbox-option">
+
+                        <input
+                            type="checkbox"
+                            id="showPassword"
+                        >
+
+                        <span>
+                            Show password
+                        </span>
+
+                    </label>
+
+                    <label class="checkbox-option">
+
+                        <input
+                            type="checkbox"
+                            id="rememberMe"
+                            name="remember_me"
+                        >
+
+                        <span>
+                            Keep me signed in
+                        </span>
+
+                    </label>
+
+                </div>
+
+                <div class="forgot-password">
+
+                    <a href="{% url 'forgot_password' %}">
+                        Forgot Password?
+                    </a>
+
+                </div>
+
+                <button
+                    type="submit"
+                    class="auth-button"
+                >
+                    Sign In
+                </button>
+
+            </form>
+
+            <div class="auth-footer">
+
+                <span>
+                    Don't have an account?
+                </span>
+
+                <a
+                    href="{% url 'signup' %}"
+                    class="sign-in-link"
+                >
+                    Sign Up
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+{% endblock %}
+
+
+{% block extra_js %}
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    const showPassword =
+        document.getElementById("showPassword");
+
+    const password =
+        document.getElementById("password");
+
+    if (showPassword) {
+
+        showPassword.addEventListener("change", function () {
+
+            password.type = this.checked
+                ? "text"
+                : "password";
+
+        });
+
+    }
+
+});
+
+</script>
+
+{% endblock %}

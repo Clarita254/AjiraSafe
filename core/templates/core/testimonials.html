@@ -1,0 +1,314 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}
+AjiraSafe | Testimonials
+{% endblock %}
+
+
+{% block content %}
+
+<!-- =====================================================
+     TESTIMONIAL HERO
+====================================================== -->
+
+<section class="testimonials-hero">
+
+    <div class="container">
+
+        <div class="testimonials-hero-content">
+
+            <div class="section-label">
+                TRUST & EXPERIENCES
+            </div>
+
+            <h1>
+                Real experiences.
+                <span>Safer job decisions.</span>
+            </h1>
+
+            <p>
+                Discover how job seekers experience AjiraSafe as they
+                assess online opportunities, verify employers, and make
+                more informed decisions before applying.
+            </p>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =====================================================
+     TESTIMONIALS
+====================================================== -->
+
+<section class="section testimonials-section">
+
+    <div class="container">
+
+        <div class="testimonials-intro">
+
+            <div>
+                <div class="section-label">
+                    WHAT USERS SAY
+                </div>
+
+                <h2>
+                    Built to help you apply with confidence.
+                </h2>
+            </div>
+
+            <p>
+                Every experience helps us understand what job seekers
+                need when navigating online recruitment. As verified
+                feedback is collected, this space will showcase
+                genuine experiences from people who have used AjiraSafe.
+            </p>
+
+        </div>
+
+
+        {% if testimonials %}
+
+            <div class="testimonials-grid">
+
+                {% for testimonial in testimonials %}
+
+                    <article class="testimonial-card">
+
+                        <div class="testimonial-top">
+
+                            <div class="testimonial-stars"
+                                 aria-label="5 star rating">
+                                ★★★★★
+                            </div>
+
+                            <span class="testimonial-quote">
+                                “
+                            </span>
+
+                        </div>
+
+
+                        <p class="testimonial-text">
+                            {{ testimonial.feedback }}
+                        </p>
+
+
+                        <div class="testimonial-author">
+
+                            <div class="testimonial-avatar">
+
+                                {{ testimonial.display_name|first|upper }}
+
+                            </div>
+
+                            <div>
+
+                                <strong>
+                                    {{ testimonial.display_name }}
+                                </strong>
+
+                                {% if testimonial.role %}
+
+                                    <span>
+                                        {{ testimonial.role }}
+                                    </span>
+
+                                {% endif %}
+
+                            </div>
+
+                        </div>
+
+                    </article>
+
+                {% endfor %}
+
+            </div>
+
+
+        {% else %}
+
+            <!-- Empty state before real testimonials are available -->
+
+            <div class="testimonial-empty-page">
+
+                <div class="testimonial-empty-icon">
+                    ★
+                </div>
+
+                <div class="testimonial-empty-content">
+
+                    <div class="section-label">
+                        COMING SOON
+                    </div>
+
+                    <h2>
+                        Your experience could be
+                        <span>the next story.</span>
+                    </h2>
+
+                    <p>
+                        AjiraSafe is being built around a simple idea:
+                        job seekers should have better information before
+                        they apply.
+                    </p>
+
+                    <p>
+                        As users begin assessing opportunities through
+                        the platform, approved feedback will appear here
+                        to share genuine experiences, useful insights,
+                        and the difference AjiraSafe makes in the
+                        job-search journey.
+                    </p>
+
+                </div>
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</section>
+
+
+<!-- =====================================================
+     WHY FEEDBACK MATTERS
+====================================================== -->
+
+<section class="section testimonial-trust-section">
+
+    <div class="container">
+
+        <div class="testimonial-trust-heading">
+
+            <div class="section-label">
+                WHY YOUR FEEDBACK MATTERS
+            </div>
+
+            <h2>
+                Your experience can help another
+                job seeker make a better decision.
+            </h2>
+
+            <p>
+                Finding an online job should not mean navigating
+                uncertainty alone. Feedback from people who use
+                AjiraSafe can help us improve the platform while
+                giving future users a clearer picture of what to expect.
+            </p>
+
+        </div>
+
+
+        <div class="testimonial-benefits">
+
+            <div class="testimonial-benefit">
+
+                <div class="benefit-number">
+                    01
+                </div>
+
+                <h3>
+                    Share your experience
+                </h3>
+
+                <p>
+                    Tell us what you found useful, clear, or helpful
+                    when assessing a job opportunity.
+                </p>
+
+            </div>
+
+
+            <div class="testimonial-benefit">
+
+                <div class="benefit-number">
+                    02
+                </div>
+
+                <h3>
+                    Help others navigate online jobs
+                </h3>
+
+                <p>
+                    Genuine experiences can give other job seekers
+                    additional perspective when using the platform.
+                </p>
+
+            </div>
+
+
+            <div class="testimonial-benefit">
+
+                <div class="benefit-number">
+                    03
+                </div>
+
+                <h3>
+                    Help us improve AjiraSafe
+                </h3>
+
+                <p>
+                    User feedback helps identify areas where the
+                    platform can become clearer, more useful, and
+                    easier to use.
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =====================================================
+     CTA
+====================================================== -->
+
+<section class="cta testimonial-cta">
+
+    <div class="container cta-container">
+
+        <div class="cta-content">
+
+            <div class="section-label cta-label">
+                START WITH BETTER INFORMATION
+            </div>
+
+            <h2>
+                Before you apply,
+                <span>know what you're dealing with.</span>
+            </h2>
+
+            <p>
+                Use AjiraSafe to assess online job opportunities,
+                understand potential risks, and check employer
+                verification information before taking the next step.
+            </p>
+
+            <a href="{% url 'signup' %}"
+               class="btn btn-light btn-large">
+
+                Get Started
+
+                <span class="btn-arrow">
+                    →
+                </span>
+
+            </a>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+{% endblock %}

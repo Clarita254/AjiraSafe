@@ -1,0 +1,806 @@
+{% extends "core/base.html" %}
+
+{% load static %}
+
+{% block title %}
+AjiraSafe | Know the Risk Before You Apply
+{% endblock %}
+
+
+{% block content %}
+
+<!-- =====================================================
+     HERO SECTION
+====================================================== -->
+
+<section class="hero">
+
+    <div class="container hero-container">
+
+
+        <!-- Hero Text -->
+        <div class="hero-content">
+
+            <div class="hero-eyebrow">
+
+                <span class="eyebrow-dot"></span>
+
+                ONLINE JOB SAFETY
+
+            </div>
+
+
+            <h1>
+
+                Know the risk
+                <span>before you apply.</span>
+
+            </h1>
+
+
+            <p class="hero-text">
+
+                AjiraSafe helps job seekers assess online job
+                advertisements, identify potential fraud risks,
+                and check employer verification information
+                before applying.
+
+            </p>
+
+
+            <div class="hero-buttons">
+
+                <a href="{% url 'signup' %}"
+                   class="btn btn-primary btn-large">
+
+                    Get Started 
+
+                    <span class="btn-arrow">
+                        →
+                    </span>
+
+                </a>
+
+
+                <a href="#how-it-works"
+                   class="btn btn-secondary btn-large">
+
+                    See How It Works
+
+                </a>
+
+            </div>
+
+
+            <!-- Trust message -->
+            <div class="hero-trust">
+
+                <div class="trust-icon">
+
+                    ✓
+
+                </div>
+
+                <p>
+
+                    Designed to help you make
+                    informed decisions about online jobs.
+
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             HERO VISUAL / RISK CARD
+        ================================================== -->
+
+        <div class="hero-visual">
+
+            <div class="risk-dashboard">
+
+                <!-- Dashboard header -->
+                <div class="dashboard-header">
+
+                    <div>
+
+                        <span class="dashboard-label">
+                            JOB RISK ASSESSMENT
+                        </span>
+
+                        <h3>
+                            Sample Assessment
+                        </h3>
+
+                    </div>
+
+                    <span class="sample-result-badge">
+                        SAMPLE RESULT
+                    </span>
+
+                </div>
+
+
+                <!-- Risk score -->
+                <div class="risk-display">
+
+                    <div class="risk-ring">
+
+                        <div class="risk-ring-inner">
+
+                            <span>
+                                RISK
+                            </span>
+
+                            <strong>
+                                62%
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="risk-description">
+
+                        <span class="analysis-label">
+                            Assessment
+                        </span>
+
+                        <h4>
+                            Medium risk
+                        </h4>
+
+                        <p>
+                            Example indicators requiring attention before
+                            applying.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Assessment checks -->
+                <div class="assessment-list">
+
+
+                    <div class="assessment-row">
+
+                        <div class="assessment-icon">
+                            ✓
+                        </div>
+
+                        <div class="assessment-info">
+
+                            <strong>Job Advertisement</strong>
+
+                            <span>
+                                Potential risk detected
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="assessment-row">
+
+                        <div class="assessment-icon">
+                            ✓
+                        </div>
+
+                        <div class="assessment-info">
+
+                            <strong>Employer Verification</strong>
+
+                            <span>
+                                Not verified
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="assessment-row">
+
+                        <div class="assessment-icon">
+                            ✓
+                        </div>
+
+                        <div class="assessment-info">
+
+                            <strong>Risk Explanation</strong>
+
+                            <span>
+                                Available
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =====================================================
+     TRUST / STATS STRIP
+====================================================== -->
+
+<section class="trust-strip">
+
+    <div class="container trust-container">
+
+
+            <div class="trust-item">
+
+            <strong>
+                    01
+            </strong>
+
+            <span>
+                    Evidence-based checks
+            </span>
+
+        </div>
+
+
+        <div class="trust-divider"></div>
+
+
+        <div class="trust-item">
+
+            <strong>
+                02
+            </strong>
+
+            <span>
+                    Clear risk signals
+            </span>
+
+        </div>
+
+
+        <div class="trust-divider"></div>
+
+
+        <div class="trust-item">
+
+            <strong>
+                03
+            </strong>
+
+            <span>
+                    Safer decisions
+            </span>
+
+        </div>
+
+
+    </div>
+
+</section>
+
+
+<!-- =====================================================
+     HOW IT WORKS
+====================================================== -->
+
+<section class="section how-section"
+         id="how-it-works">
+
+    <div class="container">
+
+
+        <div class="section-heading centered-heading">
+
+            <div class="section-label">
+                HOW IT WORKS
+            </div>
+
+            <h2>
+                From job advertisement
+                <span>to informed decision.</span>
+            </h2>
+
+            <p>
+
+                AjiraSafe combines job advertisement analysis
+                and employer verification to give job seekers
+                useful information before they apply.
+
+            </p>
+
+        </div>
+
+
+        <div class="steps">
+
+
+            <!-- Step 1 -->
+            <div class="step-card">
+
+                <div class="step-top">
+
+                    <span class="step-number">
+                        01
+                    </span>
+
+                    <div class="step-icon">
+                        ↗
+                    </div>
+
+                </div>
+
+                <h3>
+                    Submit a Job
+                </h3>
+
+                <p>
+
+                    Enter the details of the online job
+                    advertisement you want to assess.
+
+                </p>
+
+            </div>
+
+
+            <!-- Step 2 -->
+            <div class="step-card featured-step">
+
+                <div class="step-top">
+
+                    <span class="step-number">
+                        02
+                    </span>
+
+                    <div class="step-icon">
+                        ◉
+                    </div>
+
+                </div>
+
+                <h3>
+                    Analyze the Job
+                </h3>
+
+                <p>
+
+                    The system analyzes the advertisement
+                    for characteristics associated with
+                    potential job fraud.
+
+                </p>
+
+            </div>
+
+
+            <!-- Step 3 -->
+            <div class="step-card">
+
+                <div class="step-top">
+
+                    <span class="step-number">
+                        03
+                    </span>
+
+                    <div class="step-icon">
+                        ✓
+                    </div>
+
+                </div>
+
+                <h3>
+                    Review the Results
+                </h3>
+
+                <p>
+
+                    View the prediction, risk score,
+                    risk level, explanation and employer
+                    verification status.
+
+                </p>
+
+            </div>
+
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =====================================================
+     FEATURES / WHY AJIRASAFE
+====================================================== -->
+
+<section class="features-section">
+
+    <div class="container features-container">
+
+
+        <div class="features-intro">
+
+            <div class="section-label">
+                WHY AJIRASAFE
+            </div>
+
+            <h2>
+                More information.
+                <span>Better decisions.</span>
+            </h2>
+
+            <p>
+
+                Online job opportunities can sometimes
+                contain warning signs that are difficult
+                to recognize at first glance.
+
+            </p>
+
+            <p>
+
+                AjiraSafe is designed to bring useful
+                information together so that job seekers
+                can assess an opportunity before taking
+                the next step.
+
+            </p>
+
+
+            <a href="{% url 'signup' %}"
+               class="text-link">
+
+                Start assessing
+                <span>→</span>
+
+            </a>
+
+        </div>
+
+
+        <div class="feature-grid">
+
+
+            <!-- Feature 1 -->
+            <div class="feature-card">
+
+                <div class="feature-icon">
+                    ◉
+                </div>
+
+                <h3>
+                    Job Risk Assessment
+                </h3>
+
+                <p>
+
+                    Analyze job advertisements and receive
+                    information about potential fraud risk.
+
+                </p>
+
+            </div>
+
+
+            <!-- Feature 2 -->
+            <div class="feature-card">
+
+                <div class="feature-icon">
+                    ✓
+                </div>
+
+                <h3>
+                    Employer Verification
+                </h3>
+
+                <p>
+
+                    Check available employer information
+                    before deciding whether to proceed.
+
+                </p>
+
+            </div>
+
+
+            <!-- Feature 3 -->
+            <div class="feature-card">
+
+                <div class="feature-icon">
+                    !
+                </div>
+
+                <h3>
+                    Risk Explanation
+                </h3>
+
+                <p>
+
+                    Understand the factors contributing
+                    to the assessment instead of relying
+                    only on a score.
+
+                </p>
+
+            </div>
+
+
+            <!-- Feature 4 -->
+            <div class="feature-card">
+
+                <div class="feature-icon">
+                    ⚑
+                </div>
+
+                <h3>
+                    Report Suspicious Jobs
+                </h3>
+
+                <p>
+
+                    Help create awareness by reporting
+                    suspicious online job opportunities.
+
+                </p>
+
+            </div>
+
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =====================================================
+     ABOUT AJIRASAFE PREVIEW
+====================================================== -->
+
+<section class="section about-section" id="about">
+
+    <div class="container about-container">
+
+        <div class="about-content">
+
+            <div class="section-label">
+                ABOUT AJIRASAFE
+            </div>
+
+            <h2>
+                Helping job seekers
+                <span>make safer decisions.</span>
+            </h2>
+
+            <p>
+                AjiraSafe is a web-based employer verification and
+                job risk assessment platform designed to help job
+                seekers identify potential warning signs in online
+                job advertisements before they apply.
+            </p>
+
+            <a href="{% url 'about' %}" class="text-link">
+                Learn more about AjiraSafe
+                <span>→</span>
+            </a>
+
+        </div>
+
+
+        <!-- About visual -->
+
+        <div class="about-visual">
+
+            <div class="about-card">
+
+                <div class="about-card-header">
+
+                    <span>
+                        AJIRASAFE APPROACH
+                    </span>
+
+                    <span class="about-dot"></span>
+
+                </div>
+
+
+                <div class="insight-main">
+
+                    <div class="insight-icon">
+                        ✓
+                    </div>
+
+                    <div>
+
+                        <span>
+                            BEFORE YOU APPLY
+                        </span>
+
+                        <strong>
+                            Assess first.
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+                <div class="insight-points">
+
+                    <div>
+                        <span>01</span>
+                        Job analysis
+                    </div>
+
+                    <div>
+                        <span>02</span>
+                        Employer verification
+                    </div>
+
+                    <div>
+                        <span>03</span>
+                        Risk explanation
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =====================================================
+     TESTIMONIAL PREVIEW
+====================================================== -->
+
+<section class="testimonial-preview-section">
+
+    <div class="container">
+
+        <div class="section-heading centered-heading">
+
+            <div class="section-label">
+                TESTIMONIALS
+            </div>
+
+            <h2>
+                Testimonials
+            </h2>
+
+            <p>
+                Your experience matters.
+            </p>
+
+        </div>
+
+
+        <div class="testimonial-preview-grid">
+
+            {% for testimonial in testimonials|slice:":3" %}
+
+                <div class="testimonial-card">
+
+                    <div class="testimonial-stars">
+                        ★★★★★
+                    </div>
+
+                    <p class="testimonial-text">
+                        "{{ testimonial.feedback }}"
+                    </p>
+
+                    <div class="testimonial-author">
+
+                        <div class="testimonial-avatar">
+                            {{ testimonial.display_name|first|upper }}
+                        </div>
+
+                        <div>
+                            <strong>
+                                {{ testimonial.display_name }}
+                            </strong>
+
+                            <span>
+                                {{ testimonial.role }}
+                            </span>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            {% empty %}
+
+                <div class="testimonial-empty">
+
+                    <div class="testimonial-empty-icon">
+                        ★
+                    </div>
+
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+
+        <div class="testimonial-preview-action">
+
+            <a href="{% url 'testimonials' %}" class="text-link">
+                View all testimonials
+                <span>→</span>
+            </a>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =====================================================
+     CTA
+====================================================== -->
+
+<section class="cta">
+
+    <div class="container cta-container">
+
+        <div class="cta-content">
+
+            <div class="section-label cta-label">
+                START WITH AJIRASAFE
+            </div>
+
+            <h2>
+                Don't apply blindly.
+                <span>Assess the opportunity first.</span>
+            </h2>
+
+            <p>
+
+                Create an account and start assessing
+                online job advertisements before you apply.
+
+            </p>
+
+            <div class="cta-buttons">
+
+                <a href="{% url 'signup' %}"
+                   class="btn btn-light btn-large">
+
+                    Create an Account
+                    <span class="btn-arrow">
+                        →
+                    </span>
+
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+{% endblock %}
