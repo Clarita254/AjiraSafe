@@ -25,25 +25,69 @@ Sign Up | AjiraSafe
 
             </div>
 
-            <form method="POST" class="auth-form">
+
+            <!-- =========================================
+                 SIGN UP FORM
+                 ========================================= -->
+
+            <form
+                method="POST"
+                class="auth-form"
+                id="signup-form"
+                novalidate
+            >
 
                 {% csrf_token %}
 
+                <!-- =========================================
+                     FIRST NAME
+                     ========================================= -->
+
                 <div class="form-group">
 
-                    <label for="name">
-                        Name
+                    <label for="first-name">
+                        First Name
                     </label>
 
                     <input
                         type="text"
-                        id="name"
-                        name="name"
-                        placeholder="Enter your name"
+                        id="first-name"
+                        name="first_name"
+                        placeholder="Enter your first name"
+                        value="{{ first_name|default:'' }}"
+                        autocomplete="given-name"
                         required
                     >
 
                 </div>
+
+
+                <!-- =========================================
+                     LAST NAME
+                     ========================================= -->
+
+                <div class="form-group">
+
+                    <label for="last-name">
+                        Last Name
+                    </label>
+
+                    <input
+                        type="text"
+                        id="last-name"
+                        name="last_name"
+                        placeholder="Enter your last name"
+                        value="{{ last_name|default:'' }}"
+                        autocomplete="family-name"
+                        required
+                    >
+
+                </div>
+
+
+                <!-- =========================================
+                     EMAIL
+                     ========================================= -->
 
                 <div class="form-group">
 
@@ -56,10 +100,76 @@ Sign Up | AjiraSafe
                         id="email"
                         name="email"
                         placeholder="Enter your email"
+                        value="{{ email|default:'' }}"
+                        autocomplete="email"
                         required
                     >
 
                 </div>
+
+
+                <!-- =========================================
+                     PHONE NUMBER
+                     ========================================= -->
+
+                <div class="form-group">
+
+                    <label for="phone-number">
+                        Phone Number
+                    </label>
+
+                    <div class="phone-input-group">
+
+                        <select
+                            id="phone-country-code"
+                            name="phone_country_code"
+                            aria-label="Country calling code"
+                            autocomplete="tel-country-code"
+                            required
+                        >
+                            <option value="+254" {% if phone_country_code == "+254" or not phone_country_code %}selected{% endif %}>Kenya (+254)</option>
+                            <option value="+1" {% if phone_country_code == "+1" %}selected{% endif %}>US/Canada (+1)</option>
+                            <option value="+44" {% if phone_country_code == "+44" %}selected{% endif %}>United Kingdom (+44)</option>
+                            <option value="+61" {% if phone_country_code == "+61" %}selected{% endif %}>Australia (+61)</option>
+                            <option value="+64" {% if phone_country_code == "+64" %}selected{% endif %}>New Zealand (+64)</option>
+                            <option value="+256" {% if phone_country_code == "+256" %}selected{% endif %}>Uganda (+256)</option>
+                            <option value="+255" {% if phone_country_code == "+255" %}selected{% endif %}>Tanzania (+255)</option>
+                            <option value="+250" {% if phone_country_code == "+250" %}selected{% endif %}>Rwanda (+250)</option>
+                            <option value="+234" {% if phone_country_code == "+234" %}selected{% endif %}>Nigeria (+234)</option>
+                            <option value="+233" {% if phone_country_code == "+233" %}selected{% endif %}>Ghana (+233)</option>
+                            <option value="+27" {% if phone_country_code == "+27" %}selected{% endif %}>South Africa (+27)</option>
+                            <option value="+91" {% if phone_country_code == "+91" %}selected{% endif %}>India (+91)</option>
+                            <option value="+92" {% if phone_country_code == "+92" %}selected{% endif %}>Pakistan (+92)</option>
+                            <option value="+880" {% if phone_country_code == "+880" %}selected{% endif %}>Bangladesh (+880)</option>
+                            <option value="+86" {% if phone_country_code == "+86" %}selected{% endif %}>China (+86)</option>
+                            <option value="+81" {% if phone_country_code == "+81" %}selected{% endif %}>Japan (+81)</option>
+                            <option value="+971" {% if phone_country_code == "+971" %}selected{% endif %}>UAE (+971)</option>
+                            <option value="+966" {% if phone_country_code == "+966" %}selected{% endif %}>Saudi Arabia (+966)</option>
+                            <option value="+49" {% if phone_country_code == "+49" %}selected{% endif %}>Germany (+49)</option>
+                            <option value="+33" {% if phone_country_code == "+33" %}selected{% endif %}>France (+33)</option>
+                            <option value="+55" {% if phone_country_code == "+55" %}selected{% endif %}>Brazil (+55)</option>
+                        </select>
+
+                        <input
+                            type="tel"
+                            id="phone-number"
+                            name="phone_number"
+                            placeholder="717808897"
+                            value="{{ phone_number|default:'' }}"
+                            autocomplete="tel-national"
+                            inputmode="numeric"
+                            pattern="[1-9][0-9]{8}"
+                            required
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <!-- =========================================
+                     PASSWORD
+                     ========================================= -->
 
                 <div class="form-group">
 
@@ -71,11 +181,65 @@ Sign Up | AjiraSafe
                         type="password"
                         id="password"
                         name="password"
-                        placeholder="Enter your password"
+                        placeholder="Create a password"
+                        autocomplete="new-password"
                         required
                     >
 
+
+                    <!-- PASSWORD REQUIREMENTS ALERT -->
+
+                    <div
+                        id="password-alert-box"
+                        class="password-alert-box"
+                    >
+
+                        <div
+                            id="password-alert-title"
+                            class="password-alert-title"
+                        >
+                            ⚠ Password Requirements
+                        </div>
+
+
+                        <p id="password-alert-description">
+                            Your password must contain:
+                        </p>
+
+
+                        <ul id="password-requirements-list">
+
+                            <li id="length-requirement">
+                                At least 8 characters
+                            </li>
+
+                            <li id="uppercase-requirement">
+                                At least one uppercase letter (A-Z)
+                            </li>
+
+                            <li id="lowercase-requirement">
+                                At least one lowercase letter (a-z)
+                            </li>
+
+                            <li id="number-requirement">
+                                At least one number (0-9)
+                            </li>
+
+                            <li id="special-requirement">
+                                At least one special character
+                                (!, @, #, $, %, etc.)
+                            </li>
+
+                        </ul>
+
+                    </div>
+
                 </div>
+
+
+                <!-- =========================================
+                     CONFIRM PASSWORD
+                     ========================================= -->
 
                 <div class="form-group">
 
@@ -88,10 +252,16 @@ Sign Up | AjiraSafe
                         id="confirm-password"
                         name="confirm_password"
                         placeholder="Confirm your password"
+                        autocomplete="new-password"
                         required
                     >
 
                 </div>
+
+
+                <!-- =========================================
+                     SHOW PASSWORD
+                     ========================================= -->
 
                 <div class="login-options">
 
@@ -110,6 +280,11 @@ Sign Up | AjiraSafe
 
                 </div>
 
+
+                <!-- =========================================
+                     SIGN UP BUTTON
+                     ========================================= -->
+
                 <button
                     type="submit"
                     class="auth-button"
@@ -118,6 +293,11 @@ Sign Up | AjiraSafe
                 </button>
 
             </form>
+
+
+            <!-- =========================================
+                 SIGN IN LINK
+                 ========================================= -->
 
             <div class="auth-footer">
 
@@ -140,41 +320,1450 @@ Sign Up | AjiraSafe
 
 </section>
 
+
+<!-- =========================================
+     EMPTY FIELD ALERT POP-UP
+     ========================================= -->
+
+<div
+    id="required-field-alert"
+    class="required-field-alert{% if request.method == 'POST' and messages %} show{% endif %}"
+    role="alert"
+    aria-live="assertive"
+>
+
+    <span class="required-alert-icon">
+        ⚠
+    </span>
+
+    <span id="required-field-message">
+        {% if request.method == "POST" and messages %}
+            {% for message in messages %}{{ message }}{% endfor %}
+        {% else %}
+        Please fill out this field.
+        {% endif %}
+    </span>
+
+</div>
+
 {% endblock %}
 
 
 {% block extra_js %}
 
+<style>
+
+/* =========================================
+   SIGNUP VALIDATION MESSAGE
+   ========================================= */
+
+/* =========================================
+   REQUIRED FIELD ALERT POP-UP
+   ========================================= */
+
+.required-field-alert {
+
+    position: fixed;
+
+    top: 25px;
+
+    right: 25px;
+
+    z-index: 9999;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+    min-width: 280px;
+
+    max-width: 360px;
+
+    padding: 14px 18px;
+
+    background-color: #fff3cd;
+
+    border: 1px solid #f0ad4e;
+
+    border-left: 5px solid #f39c12;
+
+    border-radius: 8px;
+
+    color: #7a4b00;
+
+    font-size: 14px;
+
+    font-weight: 600;
+
+    box-shadow:
+        0 5px 15px rgba(0, 0, 0, 0.15);
+
+    opacity: 0;
+
+    visibility: hidden;
+
+    transform: translateX(120%);
+
+    transition:
+        opacity 0.3s ease,
+        transform 0.3s ease,
+        visibility 0.3s ease;
+}
+
+
+/* =========================================
+   SHOW REQUIRED FIELD ALERT
+   ========================================= */
+
+.required-field-alert.show {
+
+    opacity: 1;
+
+    visibility: visible;
+
+    transform: translateX(0);
+
+}
+
+
+/* =========================================
+   ALERT ICON
+   ========================================= */
+
+.required-alert-icon {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    flex-shrink: 0;
+
+    font-size: 18px;
+
+}
+
+.phone-input-group {
+
+    display: grid;
+
+    grid-template-columns: minmax(150px, 0.85fr) minmax(0, 1.5fr);
+
+    gap: 10px;
+
+}
+
+.phone-input-group select {
+
+    width: 100%;
+
+    min-width: 0;
+
+    padding: 13px 10px;
+
+    border: 1px solid var(--border);
+
+    border-radius: var(--radius);
+
+    background: var(--white);
+
+    color: var(--text);
+
+    font-size: 14px;
+
+}
+
+.phone-input-group select:focus {
+
+    outline: 2px solid var(--primary);
+
+    outline-offset: 1px;
+
+}
+
+
+/* =========================================
+   PASSWORD REQUIREMENTS ALERT
+   ========================================= */
+
+.password-alert-box {
+
+    display: none;
+
+    margin-top: 10px;
+
+    padding: 14px 16px;
+
+    background-color: #fff3cd;
+
+    border: 1px solid #f0ad4e;
+
+    border-left: 5px solid #f39c12;
+
+    border-radius: 8px;
+
+    color: #7a4b00;
+
+    font-size: 13px;
+
+    box-shadow:
+        0 2px 6px rgba(0, 0, 0, 0.08);
+
+}
+
+
+/* =========================================
+   PASSWORD ALERT TITLE
+   ========================================= */
+
+.password-alert-title {
+
+    font-weight: 700;
+
+    font-size: 14px;
+
+    margin-bottom: 6px;
+
+    color: #d97706;
+
+}
+
+
+/* =========================================
+   PASSWORD ALERT DESCRIPTION
+   ========================================= */
+
+.password-alert-box p {
+
+    margin: 0 0 6px 0;
+
+}
+
+
+/* =========================================
+   PASSWORD REQUIREMENTS LIST
+   ========================================= */
+
+.password-alert-box ul {
+
+    margin: 0;
+
+    padding-left: 20px;
+
+}
+
+
+.password-alert-box li {
+
+    margin-bottom: 4px;
+
+    transition:
+        opacity 0.2s ease;
+
+}
+
+
+/* =========================================
+   COMPLETED REQUIREMENT
+   ========================================= */
+
+.password-alert-box li.valid {
+
+    text-decoration: line-through;
+
+    opacity: 0.6;
+
+}
+
+
+/* =========================================
+   SUCCESS STATE FOR PASSWORD ALERT
+   ========================================= */
+
+.password-alert-box.all-valid {
+
+    background-color: #f0fff4;
+
+    border-color: #4caf70;
+
+    border-left-color: #28a745;
+
+    color: #176b35;
+
+}
+
+
+.password-alert-box.all-valid
+.password-alert-title {
+
+    color: #218838;
+
+}
+
+
+/* =========================================
+   MOBILE RESPONSIVENESS
+   ========================================= */
+
+@media (max-width: 600px) {
+
+    .required-field-alert {
+
+        top: 15px;
+
+        right: 15px;
+
+        left: 15px;
+
+        min-width: auto;
+
+        max-width: none;
+
+    }
+
+    .phone-input-group {
+
+        grid-template-columns: minmax(125px, 0.9fr) minmax(0, 1.2fr);
+
+    }
+
+}
+
+</style>
+
+
 <script>
 
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
 
-    const checkbox = document.getElementById("show-password");
-    const password = document.getElementById("password");
-    const confirmPassword =
-        document.getElementById("confirm-password");
 
-    if (checkbox) {
+        /* =========================================
+           GET FORM ELEMENTS
+           ========================================= */
 
-        checkbox.addEventListener("change", function () {
+        const signupForm =
+            document.getElementById("signup-form");
 
-            if (this.checked) {
 
-                password.type = "text";
-                confirmPassword.type = "text";
+        const firstName =
+            document.getElementById("first-name");
 
-            } else {
 
-                password.type = "password";
-                confirmPassword.type = "password";
+        const lastName =
+            document.getElementById("last-name");
+
+
+        const email =
+            document.getElementById("email");
+
+
+        const phoneNumber =
+            document.getElementById("phone-number");
+
+        const phoneCountryCode =
+            document.getElementById("phone-country-code");
+
+
+        const password =
+            document.getElementById("password");
+
+
+        const confirmPassword =
+            document.getElementById("confirm-password");
+
+
+        const showPassword =
+            document.getElementById("show-password");
+
+
+        /* =========================================
+           REQUIRED FIELD ALERT
+           ========================================= */
+
+        const requiredFieldAlert =
+            document.getElementById(
+                "required-field-alert"
+            );
+
+
+        const requiredFieldMessage =
+            document.getElementById(
+                "required-field-message"
+            );
+
+
+        let requiredAlertTimeout;
+        let nameFormatTimeout;
+        let phoneFormatTimeout;
+        let emailFormatTimeout;
+
+        function isValidEmailAddress(value) {
+
+            const emailPattern =
+                /^[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,63}$/;
+
+            return value.length <= 254 && emailPattern.test(value);
+
+        }
+
+
+        /* =========================================
+           SHOW REQUIRED FIELD POP-UP
+           ========================================= */
+
+        function showRequiredFieldAlert(
+            field,
+            message = "Please fill out this field.",
+            persist = false
+        ) {
+
+            clearTimeout(
+                requiredAlertTimeout
+            );
+
+
+            requiredFieldMessage.textContent =
+                message;
+
+
+            requiredFieldAlert.classList.add(
+                "show"
+            );
+
+
+            /*
+             * Automatically hide the pop-up
+             * after 3 seconds.
+             */
+
+            if (!persist) {
+
+                requiredAlertTimeout =
+                    setTimeout(function () {
+
+                        requiredFieldAlert.classList.remove(
+                            "show"
+                        );
+
+                    }, 3000);
+
+            }
+
+        }
+
+
+        /* =========================================
+           HIDE REQUIRED FIELD POP-UP
+           ========================================= */
+
+        function hideRequiredFieldAlert() {
+
+            clearTimeout(
+                requiredAlertTimeout
+            );
+
+
+            requiredFieldAlert.classList.remove(
+                "show"
+            );
+
+        }
+
+        if (requiredFieldAlert.classList.contains("show")) {
+
+            requiredAlertTimeout = setTimeout(
+                hideRequiredFieldAlert,
+                5000
+            );
+
+        }
+
+
+        function clearNameFormatServerAlert(field) {
+
+            const nameLabel =
+                field.name === "first_name"
+                    ? "first name"
+                    : "last name";
+
+            const messages =
+                document.querySelectorAll(".signup-message");
+
+            messages.forEach(function (message) {
+
+                const messageText =
+                    message.textContent.toLowerCase();
+
+                if (
+                    messageText.includes(nameLabel) &&
+                    messageText.includes("contain letters")
+                ) {
+
+                    message.hidden = true;
+
+                }
+
+            });
+
+            const messageContainer =
+                document.querySelector(".signup-messages");
+
+            if (
+                messageContainer &&
+                Array.from(messages).every(function (message) {
+                    return message.hidden;
+                })
+            ) {
+
+                messageContainer.hidden = true;
+
+            }
+
+        }
+
+
+        /* =========================================
+           CHECK REQUIRED FIELDS
+           ========================================= */
+
+        if (signupForm) {
+
+            signupForm.addEventListener(
+                "submit",
+                function (event) {
+
+
+                    /*
+                     * Fields are checked in the same
+                     * order they appear in the form.
+                     */
+
+
+                    /* FIRST NAME */
+
+                    if (
+                        !firstName.value.trim()
+                    ) {
+
+                        event.preventDefault();
+
+                        showRequiredFieldAlert(
+                            firstName
+                        );
+
+                        firstName.focus();
+
+                        return;
+
+                    }
+
+
+                    /* FIRST NAME FORMAT */
+
+                    if (
+                        !/^[A-Za-z]+$/.test(
+                            firstName.value.trim()
+                        )
+                    ) {
+
+                        event.preventDefault();
+
+                        showRequiredFieldAlert(
+                            firstName,
+                            "First name can only contain letters.",
+                            true
+                        );
+
+                        firstName.focus();
+
+                        return;
+
+                    }
+
+
+                    /* LAST NAME */
+
+                    if (
+                        !lastName.value.trim()
+                    ) {
+
+                        event.preventDefault();
+
+                        showRequiredFieldAlert(
+                            lastName
+                        );
+
+                        lastName.focus();
+
+                        return;
+
+                    }
+
+
+                    /* LAST NAME FORMAT */
+
+                    if (
+                        !/^[A-Za-z]+$/.test(
+                            lastName.value.trim()
+                        )
+                    ) {
+
+                        event.preventDefault();
+
+                        showRequiredFieldAlert(
+                            lastName,
+                            "Last name can only contain letters.",
+                            true
+                        );
+
+                        lastName.focus();
+
+                        return;
+
+                    }
+
+
+                    /* EMAIL */
+
+                    if (
+                        !email.value.trim()
+                    ) {
+
+                        event.preventDefault();
+
+                        showRequiredFieldAlert(
+                            email
+                        );
+
+                        email.focus();
+
+                        return;
+
+                    }
+
+                    if (!isValidEmailAddress(email.value.trim())) {
+
+                        event.preventDefault();
+
+                        showRequiredFieldAlert(
+                            email,
+                            "Enter a valid email address with a valid domain.",
+                            true
+                        );
+
+                        email.focus();
+
+                        return;
+
+                    }
+
+
+                    /* PHONE NUMBER */
+
+                    if (
+                        !phoneNumber.value.trim()
+                    ) {
+
+                        event.preventDefault();
+
+                        showRequiredFieldAlert(
+                            phoneNumber
+                        );
+
+                        phoneNumber.focus();
+
+                        return;
+
+                    }
+
+
+                    if (
+                        !/^[1-9]\d{8}$/.test(phoneNumber.value.trim()) ||
+                        phoneCountryCode.value.replace("+", "").length +
+                            phoneNumber.value.trim().length > 15
+                    ) {
+
+                        event.preventDefault();
+
+                        showRequiredFieldAlert(
+                            phoneNumber,
+                            "Enter a valid phone Number using digits only. Remove the leading 0; the country calling code includes it.",
+                            true
+                        );
+
+                        phoneNumber.focus();
+
+                        return;
+
+                    }
+
+
+                    /* PASSWORD */
+
+                    if (
+                        !password.value
+                    ) {
+
+                        event.preventDefault();
+
+                        showRequiredFieldAlert(
+                            password
+                        );
+
+                        password.focus();
+
+                        return;
+
+                    }
+
+
+                    /* CONFIRM PASSWORD */
+
+                    if (
+                        !confirmPassword.value
+                    ) {
+
+                        event.preventDefault();
+
+                        showRequiredFieldAlert(
+                            confirmPassword
+                        );
+
+                        confirmPassword.focus();
+
+                        return;
+
+                    }
+
+                }
+            );
+
+        }
+
+
+        /* =========================================
+           HIDE POP-UP WHEN USER STARTS TYPING
+           ========================================= */
+
+        const requiredFields = [
+            firstName,
+            lastName,
+            email,
+            phoneNumber,
+            password,
+            confirmPassword
+        ];
+
+
+        requiredFields.forEach(function (field) {
+
+            if (!field) {
+                return;
+            }
+
+
+            field.addEventListener(
+                "input",
+                function () {
+
+                    if (
+                        field.value.trim() !== ""
+                    ) {
+
+                        hideRequiredFieldAlert();
+
+                    }
+
+                }
+            );
+
+        });
+
+        email.addEventListener("input", function () {
+
+            clearTimeout(emailFormatTimeout);
+
+            const value = email.value.trim();
+
+            if (!value || isValidEmailAddress(value)) {
+                hideRequiredFieldAlert();
+                return;
+            }
+
+            emailFormatTimeout = setTimeout(function () {
+
+                showRequiredFieldAlert(
+                    email,
+                    "Enter a valid email address with a valid domain.",
+                    true
+                );
+
+            }, 700);
+
+        });
+
+        email.addEventListener("blur", function () {
+
+            clearTimeout(emailFormatTimeout);
+
+            const value = email.value.trim();
+
+            if (value && !isValidEmailAddress(value)) {
+
+                showRequiredFieldAlert(
+                    email,
+                    "Enter a valid email address with a valid domain.",
+                    true
+                );
 
             }
 
         });
 
-    }
+        phoneNumber.addEventListener("input", function () {
 
-});
+            clearTimeout(phoneFormatTimeout);
+
+            const value = phoneNumber.value.trim();
+
+            if (!value || (/^\d{9}$/.test(value) && !value.startsWith("0"))) {
+                hideRequiredFieldAlert();
+                return;
+            }
+
+            phoneFormatTimeout = setTimeout(function () {
+
+                showRequiredFieldAlert(
+                    phoneNumber,
+                    "Enter a valid phone Number using digits only. Remove the leading 0; the country calling code includes it.",
+                    true
+                );
+
+            }, 700);
+
+        });
+
+        phoneNumber.addEventListener("blur", function () {
+
+            clearTimeout(phoneFormatTimeout);
+
+            const value = phoneNumber.value.trim();
+            const totalDigits =
+                phoneCountryCode.value.replace("+", "").length + value.length;
+
+            if (value && (!/^[1-9]\d{8}$/.test(value) || totalDigits > 15)) {
+
+                showRequiredFieldAlert(
+                    phoneNumber,
+                    "Enter a valid phone Number using digits only. Remove the leading 0; the country calling code includes it.",
+                    true
+                );
+
+            }
+
+        });
+
+        phoneCountryCode.addEventListener("change", function () {
+
+            const value = phoneNumber.value.trim();
+
+            if (value.startsWith("0")) {
+                showRequiredFieldAlert(
+                    phoneNumber,
+                    "Enter a valid phone Number using digits only. Remove the leading 0; the country calling code includes it.",
+                    true
+                );
+                return;
+            }
+
+            hideRequiredFieldAlert();
+
+        });
+
+
+        [firstName, lastName].forEach(function (field) {
+
+            if (!field) {
+                return;
+            }
+
+            const nameLabel =
+                field.name === "first_name"
+                    ? "First name"
+                    : "Last name";
+
+            function validateNameFormat() {
+
+                clearTimeout(nameFormatTimeout);
+
+                const value = field.value.trim();
+
+                if (!value || /^[A-Za-z]+$/.test(value)) {
+                    hideRequiredFieldAlert();
+
+                    if (value) {
+                        clearNameFormatServerAlert(field);
+                    }
+
+                    return;
+                }
+
+                showRequiredFieldAlert(
+                    field,
+                    `${nameLabel} can only contain letters.`,
+                    true
+                );
+
+            }
+
+            field.addEventListener("input", function () {
+
+                clearTimeout(nameFormatTimeout);
+
+                if (!field.value.trim() || /^[A-Za-z]+$/.test(field.value.trim())) {
+                    hideRequiredFieldAlert();
+
+                    if (field.value.trim()) {
+                        clearNameFormatServerAlert(field);
+                    }
+
+                    return;
+                }
+
+                nameFormatTimeout = setTimeout(
+                    validateNameFormat,
+                    700
+                );
+
+            });
+
+            field.addEventListener("blur", validateNameFormat);
+
+        });
+
+
+        /* =========================================
+           SHOW / HIDE PASSWORD
+           ========================================= */
+
+        if (
+            showPassword &&
+            password &&
+            confirmPassword
+        ) {
+
+            showPassword.addEventListener(
+                "change",
+                function () {
+
+                    if (this.checked) {
+
+                        password.type =
+                            "text";
+
+                        confirmPassword.type =
+                            "text";
+
+                    } else {
+
+                        password.type =
+                            "password";
+
+                        confirmPassword.type =
+                            "password";
+
+                    }
+
+                }
+            );
+
+        }
+
+
+        /* =========================================
+           PASSWORD REQUIREMENTS
+           ========================================= */
+
+        const passwordAlertBox =
+            document.getElementById(
+                "password-alert-box"
+            );
+
+
+        const passwordAlertTitle =
+            document.getElementById(
+                "password-alert-title"
+            );
+
+
+        const passwordAlertDescription =
+            document.getElementById(
+                "password-alert-description"
+            );
+
+
+        const passwordRequirementsList =
+            document.getElementById(
+                "password-requirements-list"
+            );
+
+
+        const lengthRequirement =
+            document.getElementById(
+                "length-requirement"
+            );
+
+
+        const uppercaseRequirement =
+            document.getElementById(
+                "uppercase-requirement"
+            );
+
+
+        const lowercaseRequirement =
+            document.getElementById(
+                "lowercase-requirement"
+            );
+
+
+        const numberRequirement =
+            document.getElementById(
+                "number-requirement"
+            );
+
+
+        const specialRequirement =
+            document.getElementById(
+                "special-requirement"
+            );
+
+
+        let successAlertTimeout;
+
+
+        if (
+            password &&
+            passwordAlertBox
+        ) {
+
+
+            /* =========================================
+               SHOW PASSWORD REQUIREMENTS
+               ========================================= */
+
+            password.addEventListener(
+                "focus",
+                function () {
+
+                    if (
+                        !passwordAlertBox.classList.contains(
+                            "all-valid"
+                        )
+                    ) {
+
+                        passwordAlertBox.style.display =
+                            "block";
+
+                    }
+
+                }
+            );
+
+
+            /* =========================================
+               CHECK PASSWORD AS USER TYPES
+               ========================================= */
+
+            password.addEventListener(
+                "input",
+                function () {
+
+                    const value =
+                        password.value;
+
+
+                    const hasMinimumLength =
+                        value.length >= 8;
+
+
+                    const hasUppercase =
+                        /[A-Z]/.test(value);
+
+
+                    const hasLowercase =
+                        /[a-z]/.test(value);
+
+
+                    const hasNumber =
+                        /\d/.test(value);
+
+
+                    const hasSpecialCharacter =
+                        /[^A-Za-z0-9]/.test(value);
+
+
+                    /* =========================================
+                       CROSS OUT COMPLETED REQUIREMENTS
+                       ========================================= */
+
+                    if (
+                        hasMinimumLength
+                    ) {
+
+                        lengthRequirement.classList.add(
+                            "valid"
+                        );
+
+                    } else {
+
+                        lengthRequirement.classList.remove(
+                            "valid"
+                        );
+
+                    }
+
+
+                    if (
+                        hasUppercase
+                    ) {
+
+                        uppercaseRequirement.classList.add(
+                            "valid"
+                        );
+
+                    } else {
+
+                        uppercaseRequirement.classList.remove(
+                            "valid"
+                        );
+
+                    }
+
+
+                    if (
+                        hasLowercase
+                    ) {
+
+                        lowercaseRequirement.classList.add(
+                            "valid"
+                        );
+
+                    } else {
+
+                        lowercaseRequirement.classList.remove(
+                            "valid"
+                        );
+
+                    }
+
+
+                    if (
+                        hasNumber
+                    ) {
+
+                        numberRequirement.classList.add(
+                            "valid"
+                        );
+
+                    } else {
+
+                        numberRequirement.classList.remove(
+                            "valid"
+                        );
+
+                    }
+
+
+                    if (
+                        hasSpecialCharacter
+                    ) {
+
+                        specialRequirement.classList.add(
+                            "valid"
+                        );
+
+                    } else {
+
+                        specialRequirement.classList.remove(
+                            "valid"
+                        );
+
+                    }
+
+
+                    /* =========================================
+                       CHECK ALL REQUIREMENTS
+                       ========================================= */
+
+                    const allRequirementsMet =
+                        hasMinimumLength &&
+                        hasUppercase &&
+                        hasLowercase &&
+                        hasNumber &&
+                        hasSpecialCharacter;
+
+
+                    /* =========================================
+                       ALL REQUIREMENTS MET
+                       ========================================= */
+
+                    if (
+                        allRequirementsMet
+                    ) {
+
+                        const wasAlreadyValid =
+                            passwordAlertBox.classList.contains(
+                                "all-valid"
+                            );
+
+
+                        passwordAlertBox.classList.add(
+                            "all-valid"
+                        );
+
+
+                        passwordAlertTitle.textContent =
+                            "✓ Password requirements have been met.";
+
+
+                        passwordAlertDescription.style.display =
+                            "none";
+
+
+                        passwordRequirementsList.style.display =
+                            "block";
+
+
+                        if (
+                            !wasAlreadyValid
+                        ) {
+
+                            passwordAlertBox.style.display =
+                                "block";
+
+
+                            clearTimeout(
+                                successAlertTimeout
+                            );
+
+
+                            successAlertTimeout =
+                                setTimeout(
+                                    function () {
+
+                                        passwordAlertBox.style.display =
+                                            "none";
+
+                                    },
+                                    2000
+                                );
+
+                        }
+
+                    }
+
+
+                    /* =========================================
+                       REQUIREMENTS NOT YET MET
+                       ========================================= */
+
+                    else {
+
+                        clearTimeout(
+                            successAlertTimeout
+                        );
+
+
+                        passwordAlertBox.classList.remove(
+                            "all-valid"
+                        );
+
+
+                        passwordAlertBox.style.display =
+                            "block";
+
+
+                        passwordAlertTitle.textContent =
+                            "⚠ Password Requirements";
+
+
+                        passwordAlertDescription.style.display =
+                            "block";
+
+
+                        passwordAlertDescription.textContent =
+                            "Your password must contain:";
+
+
+                        passwordRequirementsList.style.display =
+                            "block";
+
+                    }
+
+                }
+            );
+
+        }
+
+
+        /* =========================================
+           PASSWORD MATCH VALIDATION
+           ========================================= */
+
+        let confirmPasswordBlurred =
+            false;
+
+
+        let confirmPasswordCheckTimeout;
+
+
+        if (
+            password &&
+            confirmPassword &&
+            signupForm
+        ) {
+
+
+            function validatePasswordMatch() {
+
+                const passwordsMatch =
+                    !confirmPassword.value ||
+                    password.value ===
+                        confirmPassword.value;
+
+
+                if (passwordsMatch) {
+
+                    hideRequiredFieldAlert();
+
+                } else {
+
+                    showRequiredFieldAlert(
+                        confirmPassword,
+                        "The passwords do not match.",
+                        true
+                    );
+
+                }
+
+
+                confirmPassword.setAttribute(
+                    "aria-invalid",
+                    String(!passwordsMatch)
+                );
+
+
+                return passwordsMatch;
+
+            }
+
+
+            confirmPassword.addEventListener(
+                "input",
+                function () {
+
+                    confirmPasswordBlurred =
+                        false;
+
+
+                    hideRequiredFieldAlert();
+
+
+                    confirmPassword.setAttribute(
+                        "aria-invalid",
+                        "false"
+                    );
+
+
+                    clearTimeout(
+                        confirmPasswordCheckTimeout
+                    );
+
+
+                    confirmPasswordCheckTimeout =
+                        setTimeout(
+                            function () {
+
+                                validatePasswordMatch();
+
+                            },
+                            700
+                        );
+
+                }
+            );
+
+
+            confirmPassword.addEventListener(
+                "blur",
+                function () {
+
+                    clearTimeout(
+                        confirmPasswordCheckTimeout
+                    );
+
+
+                    confirmPasswordBlurred =
+                        true;
+
+
+                    validatePasswordMatch();
+
+                }
+            );
+
+
+            password.addEventListener(
+                "input",
+                function () {
+
+                    if (
+                        confirmPasswordBlurred
+                    ) {
+
+                        validatePasswordMatch();
+
+                    }
+
+                }
+            );
+
+
+            signupForm.addEventListener(
+                "submit",
+                function (event) {
+
+                    clearTimeout(
+                        confirmPasswordCheckTimeout
+                    );
+
+
+                    confirmPasswordBlurred =
+                        true;
+
+
+                    if (
+                        !validatePasswordMatch()
+                    ) {
+
+                        event.preventDefault();
+
+                        confirmPassword.focus();
+
+                    }
+
+                }
+            );
+
+        }
+
+    }
+);
 
 </script>
 

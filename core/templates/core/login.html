@@ -14,9 +14,13 @@ Login | AjiraSafe
 
             <div class="auth-header">
 
-                <p class="section-label">WELCOME BACK</p>
+                <p class="section-label">
+                    WELCOME BACK
+                </p>
 
-                <h1>Sign In</h1>
+                <h1>
+                    Sign In
+                </h1>
 
                 <p>
                     Sign in to your AjiraSafe account to verify
@@ -25,9 +29,58 @@ Login | AjiraSafe
 
             </div>
 
-            <form method="POST" class="auth-form">
+
+            <!-- INVALID LOGIN MESSAGE -->
+
+            {% if invalid_credentials %}
+
+                <div
+                    class="auth-message error invalid-credentials-message"
+                    role="alert"
+                    aria-live="assertive"
+                >
+                    The Email address or password is invalid.
+                </div>
+
+            {% endif %}
+
+
+            <!-- DJANGO MESSAGES -->
+
+            {% if messages %}
+
+                <div
+                    class="auth-messages"
+                    role="alert"
+                    aria-live="assertive"
+                >
+
+                    {% for message in messages %}
+
+                        <div class="auth-message {{ message.tags }}">
+                            {{ message }}
+                        </div>
+
+                    {% endfor %}
+
+                </div>
+
+            {% endif %}
+
+
+            <!-- LOGIN FORM -->
+
+            <form
+                method="POST"
+                class="auth-form"
+                autocomplete="on"
+                id="loginForm"
+            >
 
                 {% csrf_token %}
+
+
+                <!-- EMAIL -->
 
                 <div class="form-group">
 
@@ -40,10 +93,16 @@ Login | AjiraSafe
                         id="email"
                         name="email"
                         placeholder="Enter your email address"
-                        required
+                        value="{{ email|default:'' }}"
+                        autocomplete="username"
+                        autocapitalize="none"
+                        spellcheck="false"
                     >
 
                 </div>
+
+
+                <!-- PASSWORD -->
 
                 <div class="form-group">
 
@@ -56,12 +115,17 @@ Login | AjiraSafe
                         id="password"
                         name="password"
                         placeholder="Enter your password"
-                        required
+                        autocomplete="current-password"
                     >
 
                 </div>
 
+
+                <!-- LOGIN OPTIONS -->
+
                 <div class="login-options">
+
+                    <!-- SHOW PASSWORD -->
 
                     <label class="checkbox-option">
 
@@ -76,12 +140,16 @@ Login | AjiraSafe
 
                     </label>
 
+
+                    <!-- KEEP ME SIGNED IN -->
+
                     <label class="checkbox-option">
 
                         <input
                             type="checkbox"
                             id="rememberMe"
                             name="remember_me"
+                            {% if remember_me %}checked{% endif %}
                         >
 
                         <span>
@@ -92,6 +160,9 @@ Login | AjiraSafe
 
                 </div>
 
+
+                <!-- FORGOT PASSWORD -->
+
                 <div class="forgot-password">
 
                     <a href="{% url 'forgot_password' %}">
@@ -99,6 +170,9 @@ Login | AjiraSafe
                     </a>
 
                 </div>
+
+
+                <!-- SIGN IN -->
 
                 <button
                     type="submit"
@@ -108,6 +182,9 @@ Login | AjiraSafe
                 </button>
 
             </form>
+
+
+            <!-- SIGN UP -->
 
             <div class="auth-footer">
 
@@ -139,21 +216,205 @@ Login | AjiraSafe
 
 document.addEventListener("DOMContentLoaded", function () {
 
-    const showPassword =
-        document.getElementById("showPassword");
+    const loginForm =
+        document.getElementById("loginForm");
+
+    const email =
+        document.getElementById("email");
 
     const password =
         document.getElementById("password");
 
-    if (showPassword) {
+    const showPassword =
+        document.getElementById("showPassword");
 
-        showPassword.addEventListener("change", function () {
+    const invalidCredentialsMessage =
+        document.querySelector(
+            ".invalid-credentials-message"
+        );
 
-            password.type = this.checked
-                ? "text"
-                : "password";
+    const authMessages =
+        document.querySelector(".auth-messages");
 
+
+    /*
+     * =====================================================
+     * CLEAR INVALID LOGIN MESSAGE
+     * =====================================================
+     *
+     * Once the user starts typing again, the old
+     * invalid-login message disappears.
+     */
+
+    function dismissLoginMessage() {
+
+        if (invalidCredentialsMessage) {
+
+            invalidCredentialsMessage.hidden = true;
+
+        }
+
+        if (authMessages) {
+
+            authMessages.hidden = true;
+
+        }
+
+    }
+
+
+    if (email) {
+
+        email.addEventListener(
+            "input",
+            dismissLoginMessage
+        );
+
+    }
+
+
+    if (password) {
+
+        password.addEventListener(
+            "input",
+            dismissLoginMessage
+        );
+
+    }
+
+
+    /*
+     * =====================================================
+     * SHOW INVALID LOGIN MESSAGE
+     * =====================================================
+     */
+
+    const loginAlert =
+        invalidCredentialsMessage || authMessages;
+
+
+    if (loginAlert) {
+
+        loginAlert.scrollIntoView({
+            behavior: "smooth",
+            block: "center"
         });
+
+    }
+
+
+    /*
+     * =====================================================
+     * BROWSER BACK / FORWARD CACHE
+     * =====================================================
+     */
+
+    window.addEventListener(
+        "pageshow",
+        function (event) {
+
+            if (
+                event.persisted &&
+                loginAlert
+            ) {
+
+                loginAlert.hidden = true;
+
+            }
+
+        }
+    );
+
+
+    /*
+     * =====================================================
+     * SHOW / HIDE PASSWORD
+     * =====================================================
+     */
+
+    if (
+        showPassword &&
+        password
+    ) {
+
+        showPassword.addEventListener(
+            "change",
+            function () {
+
+                password.type =
+                    this.checked
+                        ? "text"
+                        : "password";
+
+            }
+        );
+
+    }
+
+
+    /*
+     * =====================================================
+     * LOGIN FORM VALIDATION
+     * =====================================================
+     *
+     * Prevent submission if either field is empty.
+     *
+     * We use alert() because this is the behaviour
+     * requested for the login page.
+     */
+
+    if (loginForm) {
+
+        loginForm.addEventListener(
+            "submit",
+            function (event) {
+
+                const emailValue =
+                    email.value.trim();
+
+                const passwordValue =
+                    password.value;
+
+
+                /*
+                 * EMAIL IS EMPTY
+                 */
+
+                if (!emailValue) {
+
+                    event.preventDefault();
+
+                    alert(
+                        "Please enter your email address."
+                    );
+
+                    email.focus();
+
+                    return;
+
+                }
+
+
+                /*
+                 * PASSWORD IS EMPTY
+                 */
+
+                if (!passwordValue) {
+
+                    event.preventDefault();
+
+                    alert(
+                        "Please enter your password."
+                    );
+
+                    password.focus();
+
+                    return;
+
+                }
+
+            }
+        );
 
     }
 
