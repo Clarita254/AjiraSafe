@@ -1,33 +1,694 @@
-{% extends "core/base.html" %}
 
-{% block title %}
-System Administrator Dashboard | AjiraSafe
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}System Administrator Dashboard | AjiraSafe{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'core/css/style.css' %}">
 {% endblock %}
 
 {% block content %}
+<div class="admin-dashboard">
 
-<section class="auth-page">
+    <!-- SIDEBAR -->
+    <aside class="admin-sidebar" aria-label="Administrator navigation">
 
-    <div class="auth-container">
-
-        <div class="auth-card">
-
-            <div class="auth-header">
-
-                <p class="section-label">AJIRASAFE</p>
-
-                <h1>System Administrator Dashboard</h1>
-
-                <p>
-                    Welcome to the System Administrator dashboard.
-                </p>
-
+        <div class="admin-profile">
+            <div class="admin-avatar">
+                {{ request.user.first_name|default:request.user.username|slice:":1"|upper }}
             </div>
 
+            <div class="admin-profile-copy">
+                <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
+                <span>System Administrator</span>
+            </div>
         </div>
 
-    </div>
+        <p class="admin-sidebar-label">ADMIN WORKSPACE</p>
 
-</section>
+        <nav class="admin-nav" aria-label="Dashboard sections">
+
+            <button type="button"
+                    class="admin-nav-link active"
+                    data-admin-tab="overview"
+                    aria-selected="true">
+                <span class="admin-nav-icon">▦</span>
+                Overview
+            </button>
+
+            <button type="button"
+                    class="admin-nav-link"
+                    data-admin-tab="users"
+                    aria-selected="false">
+                <span class="admin-nav-icon">♙</span>
+                Manage Users
+            </button>
+
+            <button type="button"
+                    class="admin-nav-link"
+                    data-admin-tab="reports"
+                    aria-selected="false">
+                <span class="admin-nav-icon">⚑</span>
+                Suspicious Reports
+            </button>
+
+            <button type="button"
+                    class="admin-nav-link"
+                    data-admin-tab="employers"
+                    aria-selected="false">
+                <span class="admin-nav-icon">▣</span>
+                Employer Verification
+            </button>
+
+            <button type="button"
+                    class="admin-nav-link"
+                    data-admin-tab="feedback"
+                    aria-selected="false">
+                <span class="admin-nav-icon">✉</span>
+                User Feedback
+            </button>
+
+            <button type="button"
+                    class="admin-nav-link"
+                    data-admin-tab="testimonials"
+                    aria-selected="false">
+                <span class="admin-nav-icon">★</span>
+                Testimonials
+            </button>
+
+            <button type="button"
+                    class="admin-nav-link"
+                    data-admin-tab="activity"
+                    aria-selected="false">
+                <span class="admin-nav-icon">◷</span>
+                System Activities
+            </button>
+
+        </nav>
+
+        <div class="admin-sidebar-links">
+            <a href="{% url 'home' %}" class="admin-side-link">
+                <span>⌂</span> Visit Website
+            </a>
+
+            <a href="{% url 'logout' %}" class="admin-side-link admin-logout">
+                <span>↪</span> Log Out
+            </a>
+        </div>
+
+        <div class="admin-help-card">
+            <div class="admin-help-icon">✓</div>
+            <strong>Keep AjiraSafe reliable</strong>
+            <p>
+                Review reports carefully, verify employer information,
+                and keep administrative records up to date.
+            </p>
+        </div>
+
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="admin-main">
+
+        <!-- OVERVIEW -->
+        <section class="admin-panel active-admin-panel"
+                 data-admin-panel="overview">
+
+            <header class="admin-welcome">
+                <div>
+                    <p class="admin-eyebrow">ADMINISTRATOR WORKSPACE</p>
+
+                    <h1>
+                        Welcome back{% if request.user.first_name %},
+                        {{ request.user.first_name }}{% endif %}.
+                    </h1>
+
+                    <p class="admin-welcome-text">
+                        Here is an overview of your AjiraSafe platform
+                        and the areas that need attention.
+                    </p>
+                </div>
+
+                <span class="admin-system-status">
+                    <span></span>
+                    Administrator access
+                </span>
+            </header>
+
+            <!-- TRUST BANNER -->
+            <section class="admin-trust-banner">
+                <div class="admin-trust-mark">✓</div>
+
+                <div>
+                    <strong>
+                        Protecting job seekers starts with careful review
+                    </strong>
+
+                    <p>
+                        Review suspicious advertisements, maintain accurate
+                        employer verification records, and handle user
+                        feedback responsibly.
+                    </p>
+                </div>
+            </section>
+
+            <!-- SUMMARY CARDS -->
+            <section class="admin-summary-grid">
+
+                <article class="admin-summary-card">
+                    <div class="admin-summary-top">
+                        <span class="admin-summary-icon blue">♙</span>
+                        <span class="admin-summary-caption">ACCOUNTS</span>
+                    </div>
+
+                    <p class="admin-summary-label">Registered users</p>
+                    <strong class="admin-summary-number">
+                        {{ total_users|default:0 }}
+                    </strong>
+                    <span class="admin-summary-note">
+                        All registered accounts
+                    </span>
+                </article>
+
+                <article class="admin-summary-card">
+                    <div class="admin-summary-top">
+                        <span class="admin-summary-icon teal">✓</span>
+                        <span class="admin-summary-caption">COMMUNITY</span>
+                    </div>
+
+                    <p class="admin-summary-label">Job applicants</p>
+                    <strong class="admin-summary-number">
+                        {{ total_applicants|default:0 }}
+                    </strong>
+                    <span class="admin-summary-note">
+                        Applicant accounts
+                    </span>
+                </article>
+
+                <article class="admin-summary-card">
+                    <div class="admin-summary-top">
+                        <span class="admin-summary-icon violet">⚿</span>
+                        <span class="admin-summary-caption">ACCESS</span>
+                    </div>
+
+                    <p class="admin-summary-label">Administrators</p>
+                    <strong class="admin-summary-number">
+                        {{ total_administrators|default:0 }}
+                    </strong>
+                    <span class="admin-summary-note">
+                        Accounts with admin role
+                    </span>
+                </article>
+
+                <article class="admin-summary-card">
+                    <div class="admin-summary-top">
+                        <span class="admin-summary-icon amber">★</span>
+                        <span class="admin-summary-caption">TESTIMONIALS</span>
+                    </div>
+
+                    <p class="admin-summary-label">Awaiting approval</p>
+                    <strong class="admin-summary-number">
+                        {{ pending_testimonials|default:0 }}
+                    </strong>
+                    <span class="admin-summary-note">
+                        Testimonials not approved
+                    </span>
+                </article>
+
+            </section>
+
+            <!-- QUICK ACCESS -->
+            <section class="admin-content-section">
+
+                <div class="admin-section-heading">
+                    <div>
+                        <p class="admin-eyebrow">QUICK ACCESS</p>
+                        <h2>Manage your platform</h2>
+                        <p>Choose an administrative task to continue.</p>
+                    </div>
+                </div>
+
+                <div class="admin-quick-grid">
+
+                    <button type="button"
+                            class="admin-quick-card"
+                            data-admin-open="users">
+                        <span class="admin-quick-icon blue">♙</span>
+                        <strong>Manage system users</strong>
+                        <span>Review registered accounts and their roles.</span>
+                        <span class="admin-card-link">View users →</span>
+                    </button>
+
+                    <button type="button"
+                            class="admin-quick-card"
+                            data-admin-open="reports">
+                        <span class="admin-quick-icon amber">⚑</span>
+                        <strong>Review suspicious reports</strong>
+                        <span>Inspect reports submitted by job applicants.</span>
+                        <span class="admin-card-link">Review reports →</span>
+                    </button>
+
+                    <button type="button"
+                            class="admin-quick-card"
+                            data-admin-open="employers">
+                        <span class="admin-quick-icon teal">▣</span>
+                        <strong>Verify employers</strong>
+                        <span>Manage employer verification information.</span>
+                        <span class="admin-card-link">View employers →</span>
+                    </button>
+
+                    <button type="button"
+                            class="admin-quick-card"
+                            data-admin-open="feedback">
+                        <span class="admin-quick-icon violet">✉</span>
+                        <strong>Review user feedback</strong>
+                        <span>Read feedback and track review status.</span>
+                        <span class="admin-card-link">View feedback →</span>
+                    </button>
+
+                </div>
+            </section>
+
+            <!-- RECENT USERS -->
+            <section class="admin-content-section admin-table-card">
+
+                <div class="admin-table-heading">
+                    <div>
+                        <h2>Recently registered users</h2>
+                        <p>Latest accounts registered on AjiraSafe.</p>
+                    </div>
+
+                    <button type="button"
+                            class="admin-text-button"
+                            data-admin-open="users">
+                        View all users →
+                    </button>
+                </div>
+
+                <div class="admin-table-wrap">
+                    <table class="admin-table">
+
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Email address</th>
+                                <th>Date joined</th>
+                                <th>Account status</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for account in recent_users %}
+                            <tr>
+                                <td>
+                                    <div class="admin-user-cell">
+                                        <span class="admin-table-avatar">
+                                            {{ account.first_name|default:account.username|slice:":1"|upper }}
+                                        </span>
+
+                                        <span>
+                                            {{ account.get_full_name|default:account.username }}
+                                        </span>
+                                    </div>
+                                </td>
+
+                                <td>{{ account.email|default:"—" }}</td>
+
+                                <td>
+                                    {{ account.date_joined|date:"d M Y" }}
+                                </td>
+
+                                <td>
+                                    {% if account.is_active %}
+                                        <span class="admin-status-pill success">
+                                            Active
+                                        </span>
+                                    {% else %}
+                                        <span class="admin-status-pill muted">
+                                            Inactive
+                                        </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="admin-empty-cell">
+                                    No registered users found.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+
+                    </table>
+                </div>
+            </section>
+
+        </section>
+
+        <!-- MANAGE USERS -->
+        <section class="admin-panel"
+                 data-admin-panel="users"
+                 hidden>
+
+            <div class="admin-panel-heading">
+                <p class="admin-eyebrow">ACCOUNT ADMINISTRATION</p>
+                <h1>Manage system users</h1>
+                <p>
+                    Review registered accounts and identify the role
+                    assigned to each account.
+                </p>
+            </div>
+
+            <div class="admin-info-banner">
+                <strong>User management</strong>
+                <p>
+                    This section currently lists registered accounts.
+                    Account activation, role changes, and other administrative
+                    actions require protected server-side views before they
+                    can be enabled.
+                </p>
+            </div>
+
+            <section class="admin-content-section admin-table-card">
+                <div class="admin-table-heading">
+                    <div>
+                        <h2>Registered accounts</h2>
+                        <p>
+                            {{ total_users|default:0 }} account(s) in the system.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="admin-table-wrap">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Date joined</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for account in recent_users %}
+                            <tr>
+                                <td>
+                                    {{ account.get_full_name|default:account.username }}
+                                </td>
+
+                                <td>{{ account.email|default:"—" }}</td>
+
+                                <td>
+                                    {% for group in account.groups.all %}
+                                        <span class="admin-status-pill info">
+                                            {{ group.name }}
+                                        </span>
+                                    {% empty %}
+                                        <span class="admin-status-pill muted">
+                                            Unassigned
+                                        </span>
+                                    {% endfor %}
+                                </td>
+
+                                <td>
+                                    {{ account.date_joined|date:"d M Y" }}
+                                </td>
+
+                                <td>
+                                    {% if account.is_active %}
+                                        <span class="admin-status-pill success">
+                                            Active
+                                        </span>
+                                    {% else %}
+                                        <span class="admin-status-pill muted">
+                                            Inactive
+                                        </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="admin-empty-cell">
+                                    No registered users found.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <p class="admin-footnote">
+                    This list currently shows the five most recently
+                    registered accounts. Pagination and secure account
+                    management actions can be added next.
+                </p>
+            </section>
+
+        </section>
+
+        <!-- SUSPICIOUS REPORTS -->
+        <section class="admin-panel"
+                 data-admin-panel="reports"
+                 hidden>
+
+            <div class="admin-panel-heading">
+                <p class="admin-eyebrow">COMMUNITY SAFETY</p>
+                <h1>Suspicious job reports</h1>
+                <p>
+                    Review reports submitted by applicants and update
+                    their review status.
+                </p>
+            </div>
+
+            <div class="admin-empty-feature">
+                <span class="admin-empty-icon amber">⚑</span>
+                <h2>Report management is next</h2>
+                <p>
+                    The current Django models do not yet include a
+                    suspicious-job-report model. We will connect this
+                    section to PostgreSQL when we implement report
+                    submission, report review, and status updates.
+                </p>
+            </div>
+
+        </section>
+
+        <!-- EMPLOYER VERIFICATION -->
+        <section class="admin-panel"
+                 data-admin-panel="employers"
+                 hidden>
+
+            <div class="admin-panel-heading">
+                <p class="admin-eyebrow">EMPLOYER TRUST</p>
+                <h1>Employer verification</h1>
+                <p>
+                    Review employer information and maintain
+                    verification records.
+                </p>
+            </div>
+
+            <div class="admin-empty-feature">
+                <span class="admin-empty-icon teal">▣</span>
+                <h2>Employer records are not connected yet</h2>
+                <p>
+                    Employer and employer-verification models must be
+                    implemented before this section can display real
+                    records or save verification decisions.
+                </p>
+            </div>
+
+        </section>
+
+        <!-- USER FEEDBACK -->
+        <section class="admin-panel"
+                 data-admin-panel="feedback"
+                 hidden>
+
+            <div class="admin-panel-heading">
+                <p class="admin-eyebrow">USER EXPERIENCE</p>
+                <h1>User feedback</h1>
+                <p>
+                    Review feedback submitted by applicants and
+                    record follow-up status.
+                </p>
+            </div>
+
+            <div class="admin-empty-feature">
+                <span class="admin-empty-icon violet">✉</span>
+                <h2>Feedback management is not connected yet</h2>
+                <p>
+                    The current Testimonial model is for public
+                    testimonials, not the separate system-feedback
+                    workflow in your diagrams. A dedicated feedback
+                    model will be implemented for this feature.
+                </p>
+            </div>
+
+        </section>
+
+        <!-- TESTIMONIALS -->
+        <section class="admin-panel"
+                 data-admin-panel="testimonials"
+                 hidden>
+
+            <div class="admin-panel-heading">
+                <p class="admin-eyebrow">PUBLIC CONTENT</p>
+                <h1>Testimonials</h1>
+                <p>
+                    Review recent testimonials and see which
+                    submissions are approved.
+                </p>
+            </div>
+
+            <section class="admin-content-section admin-table-card">
+                <div class="admin-table-wrap">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Submitted by</th>
+                                <th>Feedback</th>
+                                <th>Rating</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for testimonial in recent_testimonials %}
+                            <tr>
+                                <td>
+                                    {{ testimonial.user.get_full_name|default:testimonial.user.username }}
+                                </td>
+
+                                <td class="admin-feedback-text">
+                                    {{ testimonial.feedback|truncatechars:100 }}
+                                </td>
+
+                                <td>{{ testimonial.rating }}/5</td>
+
+                                <td>
+                                    {{ testimonial.created_at|date:"d M Y" }}
+                                </td>
+
+                                <td>
+                                    {% if testimonial.is_approved %}
+                                        <span class="admin-status-pill success">
+                                            Approved
+                                        </span>
+                                    {% else %}
+                                        <span class="admin-status-pill warning">
+                                            Pending
+                                        </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="admin-empty-cell">
+                                    No testimonials have been submitted.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <p class="admin-footnote">
+                    Approval and rejection controls will be added as
+                    secure POST actions in a later step.
+                </p>
+            </section>
+
+        </section>
+
+        <!-- SYSTEM ACTIVITIES -->
+        <section class="admin-panel"
+                 data-admin-panel="activity"
+                 hidden>
+
+            <div class="admin-panel-heading">
+                <p class="admin-eyebrow">SYSTEM OVERSIGHT</p>
+                <h1>System activities</h1>
+                <p>
+                    Monitor important administrative and platform events.
+                </p>
+            </div>
+
+            <div class="admin-empty-feature">
+                <span class="admin-empty-icon blue">◷</span>
+                <h2>Activity logging is not configured yet</h2>
+                <p>
+                    Reliable activity monitoring requires an activity-log
+                    model and event recording for actions such as report
+                    status changes, employer verification updates, and
+                    feedback reviews.
+                </p>
+            </div>
+
+        </section>
+
+    </main>
+</div>
+
+<!-- SIDEBAR NAVIGATION -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const buttons = document.querySelectorAll(
+        ".admin-nav-link[data-admin-tab]"
+    );
+
+    const panels = document.querySelectorAll(
+        ".admin-panel[data-admin-panel]"
+    );
+
+    function showAdminPanel(name) {
+
+        panels.forEach(function (panel) {
+            const active = panel.dataset.adminPanel === name;
+
+            panel.hidden = !active;
+            panel.classList.toggle("active-admin-panel", active);
+        });
+
+        buttons.forEach(function (button) {
+            const active = button.dataset.adminTab === name;
+
+            button.classList.toggle("active", active);
+            button.setAttribute(
+                "aria-selected",
+                active ? "true" : "false"
+            );
+        });
+
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth"
+        });
+    }
+
+    buttons.forEach(function (button) {
+        button.addEventListener("click", function () {
+            showAdminPanel(button.dataset.adminTab);
+        });
+    });
+
+    document.querySelectorAll("[data-admin-open]").forEach(
+        function (button) {
+            button.addEventListener("click", function () {
+                showAdminPanel(button.dataset.adminOpen);
+            });
+        }
+    );
+
+    showAdminPanel("overview");
+});
+</script>
 
 {% endblock %}

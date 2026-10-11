@@ -1,25 +1,524 @@
 {% extends "core/base.html" %}
+{% load static %}
 
-{% block title %}
-Dashboard | AjiraSafe
+{% block title %}Applicant Dashboard | AjiraSafe{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'core/css/applicant-dashboard.css' %}">
 {% endblock %}
 
 {% block content %}
+<div class="app-dashboard">
+    <!-- SIDEBAR -->
+    <aside class="app-sidebar" aria-label="Applicant dashboard navigation">
+        <div class="sidebar-profile">
+            <div class="profile-avatar">
+                {{ request.user.first_name|default:request.user.username|slice:":1"|upper }}
+            </div>
+            <div class="profile-copy">
+                <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
+                <span>Job Applicant</span>
+            </div>
+        </div>
 
-<section class="section">
+        <p class="sidebar-label">WORKSPACE</p>
+        <nav class="dashboard-nav" aria-label="Dashboard sections">
+            <button type="button" class="dashboard-nav-link active"
+                    data-tab="overview" aria-selected="true">
+                <span class="nav-symbol">▦</span> Overview
+            </button>
+            <button type="button" class="dashboard-nav-link"
+                    data-tab="assess-job" aria-selected="false">
+                <span class="nav-symbol">⌕</span> Assess a Job
+            </button>
+            <button type="button" class="dashboard-nav-link"
+                    data-tab="analysis-history" aria-selected="false">
+                <span class="nav-symbol">◷</span> Analysis History
+            </button>
+            <button type="button" class="dashboard-nav-link"
+                    data-tab="reports" aria-selected="false">
+                <span class="nav-symbol">⚑</span> Suspicious Job Reports
+            </button>
+            <button type="button" class="dashboard-nav-link"
+                    data-tab="feedback" aria-selected="false">
+                <span class="nav-symbol">✉</span> System Feedback
+            </button>
+        </nav>
 
-    <div class="container">
+        <!-- LOGOUT -->
+        <div class="sidebar-logout">
+            <div class="sidebar-logout-divider"></div>
+            <a href="{% url 'logout' %}" class="dashboard-logout-link">
+                <span class="logout-symbol" aria-hidden="true">↪</span>
+                <span>Log Out</span>
+            </a>
+        </div>
 
-        <h1>
-            Welcome to your AjiraSafe Dashboard
-        </h1>
+        <div class="sidebar-help">
+            <div class="help-icon">?</div>
+            <strong>Need help?</strong>
+            <p>Learn how AjiraSafe assesses job advertisements and employer information.</p>
+            <a href="{% url 'home' %}#how-it-works">
+                How it works <span aria-hidden="true">→</span>
+            </a>
+        </div>
+    </aside>
 
-        <p>
-            Your applicant dashboard will be available here.
-        </p>
+    <!-- MAIN CONTENT -->
+    <main class="app-main">
+        <!-- OVERVIEW: DEFAULT LANDING SCREEN -->
+        <section class="dashboard-panel active-panel" data-panel="overview">
+            <section class="dashboard-welcome">
+                <div>
+                    <p class="eyebrow">APPLICANT WORKSPACE</p>
+                    <h1>
+                        Welcome back{% if request.user.first_name %}, {{ request.user.first_name }}{% endif %}.
+                    </h1>
+                    <p class="welcome-description">
+                        Your overview of job assessments, risk alerts, reports and feedback.
+                    </p>
+                </div>
+                <button class="primary-action" type="button" data-open-tab="assess-job">
+                    <span aria-hidden="true">＋</span> Assess a Job
+                </button>
+            </section>
 
-    </div>
+            <section class="trust-banner">
+                <div class="trust-mark">✓</div>
+                <div>
+                    <strong>Make informed decisions before you apply</strong>
+                    <p>
+                        Use job-risk assessments as guidance and independently verify
+                        important employer details before sharing personal information
+                        or accepting an offer.
+                    </p>
+                </div>
+            </section>
 
-</section>
+            <!-- SUMMARY CARDS -->
+            <section class="summary-grid">
+                <article class="summary-card">
+                    <div class="summary-top">
+                        <span class="summary-icon blue">⌕</span>
+                        <span class="summary-caption">ACTIVITY</span>
+                    </div>
+                    <p class="summary-label">Jobs analysed</p>
+                    <strong class="summary-number">{{ jobs_analyzed|default:"—" }}</strong>
+                    <span class="summary-note">Completed assessments</span>
+                </article>
 
+                <article class="summary-card">
+                    <div class="summary-top">
+                        <span class="summary-icon red">!</span>
+                        <span class="summary-caption">RISK WATCH</span>
+                    </div>
+                    <p class="summary-label">High-risk results</p>
+                    <strong class="summary-number">{{ high_risk_count|default:"—" }}</strong>
+                    <span class="summary-note">Results flagged for caution</span>
+                </article>
+
+                <article class="summary-card">
+                    <div class="summary-top">
+                        <span class="summary-icon amber">⚑</span>
+                        <span class="summary-caption">REPORTS</span>
+                    </div>
+                    <p class="summary-label">Reports submitted</p>
+                    <strong class="summary-number">{{ reports_count|default:"—" }}</strong>
+                    <span class="summary-note">Your suspicious-job reports</span>
+                </article>
+
+                <article class="summary-card">
+                    <div class="summary-top">
+                        <span class="summary-icon teal">✉</span>
+                        <span class="summary-caption">FEEDBACK</span>
+                    </div>
+                    <p class="summary-label">Pending feedback</p>
+                    <strong class="summary-number">{{ pending_feedback_count|default:"—" }}</strong>
+                    <span class="summary-note">Awaiting review</span>
+                </article>
+            </section>
+
+            <!-- QUICK ACCESS: ONLY THE TWO MOST IMPORTANT ACTIONS -->
+            <section class="dashboard-section">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">QUICK ACCESS</p>
+                        <h2>What would you like to do?</h2>
+                        <p>Choose a task to get started.</p>
+                    </div>
+                </div>
+
+                <div class="quick-action-grid">
+                    <button type="button" class="quick-action-card"
+                            data-open-tab="assess-job">
+                        <span class="quick-action-icon blue">⌕</span>
+                        <strong>Assess a job</strong>
+                        <span>Check a listing for potential fraud signals.</span>
+                        <span class="quick-action-link">Start assessment →</span>
+                    </button>
+
+                    <button type="button" class="quick-action-card"
+                            data-open-tab="reports">
+                        <span class="quick-action-icon amber">⚑</span>
+                        <strong>Report a suspicious job</strong>
+                        <span>Submit a concern and track its status.</span>
+                        <span class="quick-action-link">Make a report →</span>
+                    </button>
+                </div>
+            </section>
+
+            <div class="dashboard-disclaimer">
+                <span class="disclaimer-shield">✓</span>
+                <p>
+                    <strong>Safety reminder:</strong>
+                    A low-risk prediction does not guarantee that a job is genuine.
+                    Never pay recruitment fees or share banking passwords or PINs
+                    with recruiters.
+                </p>
+            </div>
+        </section>
+
+        <!-- ASSESS A JOB -->
+        <section class="dashboard-panel" data-panel="assess-job" hidden>
+            <div class="panel-welcome">
+                <p class="eyebrow">JOB RISK ASSESSMENT</p>
+                <h1>Assess a job advertisement</h1>
+                <p>
+                    Enter the job details you want AjiraSafe to assess for potential
+                    fraud indicators and employer verification information.
+                </p>
+            </div>
+
+            <div class="assessment-card">
+                <div class="assessment-intro">
+                    <div class="assessment-illustration">
+                        <span class="illustration-shield">✓</span>
+                        <span class="illustration-case">▰</span>
+                    </div>
+                    <h2>Check before you apply</h2>
+                    <p>
+                        The completed assessment will display the fraud prediction,
+                        risk score and level, employer verification status, and an
+                        explanation of important risk signals.
+                    </p>
+                    <ul class="assessment-points">
+                        <li><span>✓</span> Fraud prediction and risk score</li>
+                        <li><span>✓</span> Employer verification status</li>
+                        <li><span>✓</span> LIME explanation of risk signals</li>
+                    </ul>
+                </div>
+
+                <div class="assessment-form-panel">
+                    <div class="form-panel-heading">
+                        <h2>Job details</h2>
+                        <span class="required-note">Fields marked * are required</span>
+                    </div>
+
+                    <form class="dashboard-form" id="job-assessment-form" method="post">
+                        {% csrf_token %}
+                        <label for="job-title">Job title <span>*</span></label>
+                        <input id="job-title" name="title" type="text"
+                               placeholder="e.g. Graduate Trainee" required>
+
+                        <label for="company-name">Company / employer name <span>*</span></label>
+                        <input id="company-name" name="company_name" type="text"
+                               placeholder="Enter the advertised employer" required>
+
+                        <label for="job-location">Job location</label>
+                        <input id="job-location" name="location" type="text"
+                               placeholder="e.g. Nairobi or Remote">
+
+                        <label for="job-url">
+                            Job advertisement link
+                            <span class="optional-label">(if available)</span>
+                        </label>
+                        <input id="job-url" name="job_url" type="url"
+                               placeholder="https://example.com/job-listing">
+
+                        <label for="job-description">Job advertisement text <span>*</span></label>
+                        <textarea id="job-description" name="description" rows="6"
+                                  placeholder="Paste the job description, requirements, salary details and instructions from the listing..."
+                                  required></textarea>
+
+                        <div class="form-notice">
+                            <span>i</span>
+                            <p>
+                                Job submission, model prediction and saving the analysis
+                                will be connected to Django in the next implementation
+                                stage.
+                            </p>
+                        </div>
+
+                        <button class="primary-action form-action" type="button" disabled>
+                            Analysis submission not connected yet
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+                <!-- ANALYSIS HISTORY -->
+        <section class="dashboard-panel" data-panel="analysis-history" hidden>
+            <div class="panel-welcome">
+                <p class="eyebrow">YOUR ACTIVITY</p>
+                <h1>Analysis history</h1>
+                <p>
+                    Review past job assessments, fraud predictions, risk levels and
+                    employer verification information.
+                </p>
+            </div>
+
+            <div class="table-card">
+                <div class="table-card-heading">
+                    <div>
+                        <h2>Previous assessments</h2>
+                        <p>Your completed job analyses will be listed here.</p>
+                    </div>
+                    <span class="status-pill status-neutral">History</span>
+                </div>
+
+                <div class="empty-state">
+                    <div class="empty-state-icon">◷</div>
+                    <h3>No analysis history yet</h3>
+                    <p>
+                        After you assess a job, its title, prediction, risk score,
+                        risk level and analysis date will appear here. Opening a
+                        record will later show its full result and LIME explanation.
+                    </p>
+                    <button type="button" class="secondary-action"
+                            data-open-tab="assess-job">
+                        Assess your first job
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SUSPICIOUS JOB REPORTS: FORM + SUBMITTED REPORTS -->
+        <section class="dashboard-panel" data-panel="reports" hidden>
+            <div class="panel-welcome">
+                <p class="eyebrow">COMMUNITY SAFETY</p>
+                <h1>Suspicious job reports</h1>
+                <p>
+                    Report a potentially fraudulent advertisement and track the
+                    review status of reports you have submitted.
+                </p>
+            </div>
+
+            <div class="two-column-layout">
+                <section class="content-card">
+                    <div class="content-card-heading">
+                        <div class="heading-icon amber">⚑</div>
+                        <div>
+                            <h2>Submit a report</h2>
+                            <p>Provide details that will help an administrator review your concern.</p>
+                        </div>
+                    </div>
+
+                    <form class="dashboard-form" id="suspicious-report-form"
+                          method="post">
+                        {% csrf_token %}
+
+                        <label for="report-job-title">Job title <span>*</span></label>
+                        <input id="report-job-title" name="job_title" type="text"
+                               placeholder="Title of the suspicious job" required>
+
+                        <label for="report-company">Advertised employer / company <span>*</span></label>
+                        <input id="report-company" name="company_name" type="text"
+                               placeholder="Company or recruiter name" required>
+
+                        <label for="report-link">Job advertisement link</label>
+                        <input id="report-link" name="job_url" type="url"
+                               placeholder="https://example.com/job-listing">
+
+                        <label for="report-reason">Reason for reporting <span>*</span></label>
+                        <select id="report-reason" name="reason" required>
+                            <option value="">Select a concern</option>
+                            <option value="payment_request">Requests payment or recruitment fees</option>
+                            <option value="personal_information">Requests sensitive personal or financial information</option>
+                            <option value="fake_employer">Employer identity appears suspicious</option>
+                            <option value="misleading_offer">Unrealistic salary or misleading job offer</option>
+                            <option value="suspicious_contact">Suspicious email, phone number or contact details</option>
+                            <option value="other">Other concern</option>
+                        </select>
+
+                        <label for="report-description">Describe your concern <span>*</span></label>
+                        <textarea id="report-description" name="description" rows="5"
+                                  placeholder="Explain what seems suspicious. Do not include passwords or other sensitive information."
+                                  required></textarea>
+
+                        <div class="form-notice">
+                            <span>i</span>
+                            <p>
+                                Reports should be factual and submitted in good faith.
+                                Saving reports and tracking their status will be enabled
+                                when the backend is connected.
+                            </p>
+                        </div>
+
+                        <button class="primary-action form-action"
+                                type="button" disabled>
+                            Report submission not connected yet
+                        </button>
+                    </form>
+                </section>
+
+                <section class="content-card submitted-records">
+                    <div class="content-card-heading">
+                        <div class="heading-icon blue">▤</div>
+                        <div>
+                            <h2>My submitted reports</h2>
+                            <p>Follow up on reports you have sent.</p>
+                        </div>
+                    </div>
+
+                    <div class="empty-state">
+                        <div class="empty-state-icon report-empty-icon">⚑</div>
+                        <h3>No reports submitted yet</h3>
+                        <p>
+                            Each report will show its reference, job title, submission
+                            date and review status, such as Pending, Under Review or
+                            Resolved.
+                        </p>
+                    </div>
+
+                    <div class="status-guide">
+                        <strong>Report status guide</strong>
+                        <p><span class="status-dot pending-dot"></span><b>Pending</b> — received and awaiting review.</p>
+                        <p><span class="status-dot review-dot"></span><b>Under review</b> — being checked by an administrator.</p>
+                        <p><span class="status-dot resolved-dot"></span><b>Resolved</b> — review completed.</p>
+                    </div>
+                </section>
+            </div>
+        </section>
+                <!-- SYSTEM FEEDBACK: FORM + FEEDBACK HISTORY -->
+        <section class="dashboard-panel" data-panel="feedback" hidden>
+            <div class="panel-welcome">
+                <p class="eyebrow">HELP US IMPROVE</p>
+                <h1>System feedback</h1>
+                <p>
+                    Share your experience using AjiraSafe and check the review status
+                    of feedback you have submitted.
+                </p>
+            </div>
+
+            <div class="two-column-layout">
+                <section class="content-card">
+                    <div class="content-card-heading">
+                        <div class="heading-icon teal">✉</div>
+                        <div>
+                            <h2>Submit feedback</h2>
+                            <p>Your feedback can help improve AjiraSafe.</p>
+                        </div>
+                    </div>
+
+                    <form class="dashboard-form" id="system-feedback-form" method="post">
+                        {% csrf_token %}
+
+                        <label for="feedback-type">Feedback category <span>*</span></label>
+                        <select id="feedback-type" name="feedback_type" required>
+                            <option value="">Choose a category</option>
+                            <option value="usability">Website usability</option>
+                            <option value="analysis">Job analysis or risk explanation</option>
+                            <option value="employer_verification">Employer verification</option>
+                            <option value="technical_issue">Technical issue</option>
+                            <option value="suggestion">Suggestion for improvement</option>
+                            <option value="other">Other</option>
+                        </select>
+
+                        <label for="feedback-rating">Overall experience <span>*</span></label>
+                        <select id="feedback-rating" name="rating" required>
+                            <option value="">Select a rating</option>
+                            <option value="5">5 — Excellent</option>
+                            <option value="4">4 — Good</option>
+                            <option value="3">3 — Average</option>
+                            <option value="2">2 — Poor</option>
+                            <option value="1">1 — Very poor</option>
+                        </select>
+
+                        <label for="feedback-message">Your feedback <span>*</span></label>
+                        <textarea id="feedback-message" name="feedback" rows="6"
+                                  placeholder="Tell us what worked well or what we could improve..."
+                                  required></textarea>
+
+                        <div class="form-notice">
+                            <span>i</span>
+                            <p>
+                                Do not include passwords, banking details or other
+                                sensitive personal information in your feedback.
+                                Saving feedback will be enabled in the backend stage.
+                            </p>
+                        </div>
+
+                        <button class="primary-action form-action"
+                                type="button" disabled>
+                            Feedback submission not connected yet
+                        </button>
+                    </form>
+                </section>
+
+                <section class="content-card submitted-records">
+                    <div class="content-card-heading">
+                        <div class="heading-icon blue">▤</div>
+                        <div>
+                            <h2>My feedback submissions</h2>
+                            <p>Check whether your feedback has been reviewed.</p>
+                        </div>
+                    </div>
+
+                    <div class="empty-state">
+                        <div class="empty-state-icon feedback-empty-icon">✉</div>
+                        <h3>No feedback submitted yet</h3>
+                        <p>
+                            Your feedback history will display the category, rating,
+                            submission date and review status for each submission.
+                        </p>
+                    </div>
+
+                    <div class="status-guide">
+                        <strong>Feedback status guide</strong>
+                        <p><span class="status-dot pending-dot"></span><b>Pending</b> — waiting for review.</p>
+                        <p><span class="status-dot review-dot"></span><b>Reviewed</b> — administrator has reviewed it.</p>
+                    </div>
+                </section>
+            </div>
+        </section>
+    </main>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const tabButtons = document.querySelectorAll(".dashboard-nav-link[data-tab]");
+    const panels = document.querySelectorAll(".dashboard-panel[data-panel]");
+
+    function showPanel(tabName) {
+        panels.forEach(function (panel) {
+            const isActive = panel.dataset.panel === tabName;
+            panel.hidden = !isActive;
+            panel.classList.toggle("active-panel", isActive);
+        });
+
+        tabButtons.forEach(function (button) {
+            const isActive = button.dataset.tab === tabName;
+            button.classList.toggle("active", isActive);
+            button.setAttribute("aria-selected", isActive ? "true" : "false");
+        });
+
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    tabButtons.forEach(function (button) {
+        button.addEventListener("click", function () {
+            showPanel(button.dataset.tab);
+        });
+    });
+
+    document.querySelectorAll("[data-open-tab]").forEach(function (button) {
+        button.addEventListener("click", function () {
+            showPanel(button.dataset.openTab);
+        });
+    });
+
+    // The applicant always lands on Overview first.
+    showPanel("overview");
+});
+</script>
 {% endblock %}

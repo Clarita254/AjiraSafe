@@ -804,28 +804,32 @@ def forgot_password(request):
 # =========================================================
 # JOB APPLICANT DASHBOARD
 # =========================================================
-
-@login_required
+@login_required(login_url="login")
+@never_cache
 def dashboard(request):
 
+    # Only Job Applicants may access this dashboard.
+    if not request.user.groups.filter(name="Job Applicant").exists():
+
+        # Send administrators to their own dashboard.
+        if request.user.groups.filter(
+            name="System Administrator"
+        ).exists():
+            return redirect("admin_dashboard")
+
+        return redirect("home")
+
+    # KEEP YOUR EXISTING DASHBOARD CONTEXT AND LOGIC BELOW.
+    # For example:
+    context = {
+        # Preserve your existing context variables here.
+    }
+
     return render(
         request,
-        "core/Applicantdashboard.html"
+        "core/Applicantdashboard.html",
+        context
     )
-
-
-# =========================================================
-# SYSTEM ADMINISTRATOR DASHBOARD
-# =========================================================
-
-@login_required
-def admin_dashboard(request):
-
-    return render(
-        request,
-        "core/AdminDashboard.html"
-    )
-
     # =========================================================
 # LOG OUT
 # =========================================================
@@ -836,3 +840,63 @@ def logout_view(request):
     logout(request)
 
     return redirect("login")
+
+
+ 
+# =========================================================
+# SYSTEM ADMINISTRATOR DASHBOARD
+# =========================================================
+
+
+@login_required(login_url="login")
+@never_cache
+def admin_dashboard(request):
+    # Restrict access to System Administrators.
+    if not request.user.groups.filter(
+        name="System Administrator"
+    ).exists():
+        return redirect("home")
+
+    # Registered user statistics.
+    total_users = User.objects.count()
+
+    total_applicants = User.objects.filter(
+        groups__name="Job Applicant"
+    ).distinct().count()
+
+    total_administrators = User.objects.filter(
+        groups__name="System Administrator"
+    ).distinct().count()
+
+    # Testimonial statistics from the existing model.
+    pending_testimonials = Testimonial.objects.filter(
+        is_approved=False
+    ).count()
+
+    approved_testimonials = Testimonial.objects.filter(
+        is_approved=True
+    ).count()
+
+    recent_users = User.objects.order_by(
+        "-date_joined"
+    )[:5]
+
+    recent_testimonials = Testimonial.objects.select_related(
+        "user"
+    ).order_by("-created_at")[:5]
+
+    context = {
+        "total_users": total_users,
+        "total_applicants": total_applicants,
+        "total_administrators": total_administrators,
+        "pending_testimonials": pending_testimonials,
+        "approved_testimonials": approved_testimonials,
+        "recent_users": recent_users,
+        "recent_testimonials": recent_testimonials,
+    }
+
+    return render(
+        request,
+        "core/AdminDashboard.html",
+        context
+    )
