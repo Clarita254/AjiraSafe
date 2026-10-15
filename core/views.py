@@ -15,14 +15,31 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden
 
 from django.urls import reverse
-
+from django.db import transaction
+from django.utils import timezone
 from django.views.csrf import csrf_failure as django_csrf_failure
 
 from django.views.decorators.cache import never_cache
 
 
-from .models import Testimonial, JobApplicant
+from core.models import TestimonialDecisionLog
+from .models import (
+    Testimonial,
+    JobApplicant,
+    SystemAdministrator,
+    Employer,
+    JobAdvertisement,
+    EmployerVerificationRecord,
+    SuspiciousJobReport,
+    
+    MLModel,
+    AnalysisResult,
+    RiskAssessment,
+    Explanation,
+)
 
+from django.shortcuts import get_object_or_404
+from django.views.decorators.http import require_POST
 
 import re
 
@@ -57,6 +74,33 @@ def home(request):
         }
     )
 
+def testimonials(request):
+    approved_testimonials = (
+        Testimonial.objects
+        .filter(is_approved=True)
+        .select_related("user")
+        .order_by("-created_at", "-id")
+    )
+
+    testimonial_data = []
+
+    for testimonial in approved_testimonials:
+        testimonial_data.append({
+            "feedback": testimonial.feedback,
+            "display_name": (
+                testimonial.user.get_full_name()
+                or testimonial.user.username
+            ),
+            "role": testimonial.role,
+            "rating": testimonial.rating,
+        })
+
+    return render(
+        request,
+        "core/testimonials.html",
+        {"testimonials": testimonial_data},
+    )
+
 
 # =========================================================
 # ABOUT
@@ -72,34 +116,113 @@ def about(request):
 
 # =========================================================
 # TESTIMONIALS
-# =========================================================
+@login_required(login_url="login")
+@require_POST
+def testimonial_action(request, testimonial_id, action):
+    # Only system administrators may manage feedback.
+    if not request.user.groups.filter(
+        name="System Administrator"
+    ).exists():
+        return HttpResponseForbidden(
+            "You are not authorised to manage feedback."
+        )
 
-def testimonials(request):
+    administrator = SystemAdministrator.objects.filter(
+        user=request.user
+    ).first()
 
-    testimonials = Testimonial.objects.filter(
-        is_approved=True
-    ).select_related("user")
+    if administrator is None:
+        messages.error(
+            request,
+            "Your administrator profile could not be found."
+        )
+        return redirect("admin_dashboard")
 
-    testimonial_data = []
+    if action not in ("review", "approve", "reject"):
+        return HttpResponseForbidden("Invalid feedback action.")
 
-    for testimonial in testimonials:
+    with transaction.atomic():
+        testimonial = get_object_or_404(
+            Testimonial.objects.select_for_update(),
+            pk=testimonial_id
+        )
 
-        testimonial_data.append({
-            "feedback": testimonial.feedback,
-            "display_name": testimonial.user.get_full_name()
-                or testimonial.user.username,
-            "role": testimonial.role,
-            "rating": testimonial.rating,
-        })
+        # Block changes only after a final decision has been made.
+        if testimonial.status == Testimonial.Status.APPROVED:
+            messages.warning(
+                request,
+                "A final decision has already been recorded for "
+                "this feedback. It cannot be changed."
+            )
+            return redirect("admin_dashboard")
 
-    return render(
-        request,
-        "core/testimonials.html",
-        {
-            "testimonials": testimonial_data
-        }
-    )
+        # Actions are allowed while pending or under review.
+        if testimonial.status not in (
+            Testimonial.Status.PENDING,
+            Testimonial.Status.UNDER_REVIEW,
+        ):
+            messages.warning(
+                request,
+                "This feedback cannot be processed in its current status."
+            )
+            return redirect("admin_dashboard")
 
+        # Mark as Under Review only when currently pending.
+        if action == "review":
+            if testimonial.status != Testimonial.Status.PENDING:
+                messages.warning(
+                    request,
+                    "This feedback is already Under Review."
+                )
+                return redirect("admin_dashboard")
+
+            testimonial.status = Testimonial.Status.UNDER_REVIEW
+            testimonial.is_approved = False
+            testimonial.reviewed_by = administrator
+            testimonial.reviewed_at = timezone.now()
+            testimonial.admin_comment = request.POST.get(
+                "admin_comment", ""
+            ).strip()
+            testimonial.save()
+
+            messages.success(
+                request,
+                "Feedback marked as Under Review."
+            )
+
+        # Approve feedback for publication.
+        elif action == "approve":
+            testimonial.status = Testimonial.Status.APPROVED
+            testimonial.is_approved = True
+            testimonial.reviewed_by = administrator
+            testimonial.reviewed_at = timezone.now()
+            testimonial.admin_comment = request.POST.get(
+                "admin_comment", ""
+            ).strip()
+            testimonial.save()
+
+            messages.success(
+                request,
+                "Feedback approved for publication."
+            )
+
+        # Finalise the feedback and keep it private.
+        elif action == "reject":
+            testimonial.status = Testimonial.Status.APPROVED
+            testimonial.is_approved = False
+            testimonial.reviewed_by = administrator
+            testimonial.reviewed_at = timezone.now()
+            testimonial.admin_comment = request.POST.get(
+                "admin_comment", ""
+            ).strip()
+            testimonial.save()
+
+            messages.success(
+                request,
+                "Feedback finalised and kept private."
+            )
+
+    return redirect("admin_dashboard")
 
 # =========================================================
 # SERVICES
@@ -804,14 +927,14 @@ def forgot_password(request):
 # =========================================================
 # JOB APPLICANT DASHBOARD
 # =========================================================
+
 @login_required(login_url="login")
 @never_cache
 def dashboard(request):
-
     # Only Job Applicants may access this dashboard.
-    if not request.user.groups.filter(name="Job Applicant").exists():
-
-        # Send administrators to their own dashboard.
+    if not request.user.groups.filter(
+        name="Job Applicant"
+    ).exists():
         if request.user.groups.filter(
             name="System Administrator"
         ).exists():
@@ -819,17 +942,116 @@ def dashboard(request):
 
         return redirect("home")
 
-    # KEEP YOUR EXISTING DASHBOARD CONTEXT AND LOGIC BELOW.
-    # For example:
+    # Retrieve the applicant's profile.
+    try:
+        applicant = request.user.job_applicant
+    except JobApplicant.DoesNotExist:
+        messages.error(
+            request,
+            "Your applicant profile could not be found."
+        )
+        return redirect("home")
+
+    # Process the applicant's feedback submission.
+    if request.method == "POST" and "feedback_type" in request.POST:
+        category = request.POST.get(
+            "feedback_type", ""
+        ).strip()
+
+        feedback_text = request.POST.get(
+            "feedback", ""
+        ).strip()
+
+        rating_value = request.POST.get(
+            "rating", ""
+        ).strip()
+
+        valid_categories = [
+            choice[0]
+            for choice in Testimonial.Category.choices
+        ]
+
+        if category not in valid_categories:
+            messages.error(
+                request,
+                "Please select a valid feedback category."
+            )
+
+        elif not feedback_text:
+            messages.error(
+                request,
+                "Please enter your feedback."
+            )
+
+        else:
+            try:
+                rating = int(rating_value)
+            except (TypeError, ValueError):
+                rating = 0
+
+            if rating < 1 or rating > 5:
+                messages.error(
+                    request,
+                    "Please select a rating between 1 and 5."
+                )
+            else:
+                Testimonial.objects.create(
+                    user=request.user,
+                    category=category,
+                    feedback=feedback_text,
+                    rating=rating,
+                    status=Testimonial.Status.PENDING,
+                    is_approved=False,
+                )
+
+                messages.success(
+                    request,
+                    "Your feedback has been submitted successfully. "
+                    "You can track its status in My Feedback Submissions."
+                )
+
+                return redirect("dashboard")
+
+    # Show only feedback submitted by the logged-in applicant.
+    feedback_submissions = Testimonial.objects.filter(
+        user=request.user
+    ).order_by("-created_at")
+
+    # Dashboard summary information.
+    jobs_analyzed = AnalysisResult.objects.filter(
+        job__applicant=applicant
+    ).count()
+
+    high_risk_count = RiskAssessment.objects.filter(
+        result__job__applicant=applicant,
+        risk_level__in=[
+            RiskAssessment.RiskLevel.HIGH,
+            RiskAssessment.RiskLevel.VERY_HIGH,
+        ],
+    ).count()
+
+    reports_count = SuspiciousJobReport.objects.filter(
+        applicant=applicant
+    ).count()
+
+    pending_feedback_count = feedback_submissions.filter(
+        status=Testimonial.Status.PENDING
+    ).count()
+
     context = {
-        # Preserve your existing context variables here.
+        "jobs_analyzed": jobs_analyzed,
+        "high_risk_count": high_risk_count,
+        "reports_count": reports_count,
+        "pending_feedback_count": pending_feedback_count,
+        "feedback_submissions": feedback_submissions,
     }
 
     return render(
         request,
         "core/Applicantdashboard.html",
-        context
+        context,
     )
+
     # =========================================================
 # LOG OUT
 # =========================================================
@@ -848,16 +1070,17 @@ def logout_view(request):
 # =========================================================
 
 
+
 @login_required(login_url="login")
 @never_cache
 def admin_dashboard(request):
-    # Restrict access to System Administrators.
+    # Only users in the System Administrator group may access this view.
     if not request.user.groups.filter(
         name="System Administrator"
     ).exists():
         return redirect("home")
 
-    # Registered user statistics.
+    # User account statistics.
     total_users = User.objects.count()
 
     total_applicants = User.objects.filter(
@@ -868,35 +1091,267 @@ def admin_dashboard(request):
         groups__name="System Administrator"
     ).distinct().count()
 
-    # Testimonial statistics from the existing model.
+    # Testimonial statistics.
     pending_testimonials = Testimonial.objects.filter(
-        is_approved=False
+         status=Testimonial.Status.PENDING
     ).count()
 
     approved_testimonials = Testimonial.objects.filter(
-        is_approved=True
+        status=Testimonial.Status.APPROVED
     ).count()
 
-    recent_users = User.objects.order_by(
-        "-date_joined"
-    )[:5]
+    # Suspicious job report statistics.
+    total_reports = SuspiciousJobReport.objects.count()
+
+    pending_reports = SuspiciousJobReport.objects.filter(
+        status=SuspiciousJobReport.Status.PENDING
+    ).count()
+
+    # Employer verification statistics.
+    total_employers = Employer.objects.count()
+
+    pending_employer_verifications = Employer.objects.filter(
+        verification_records__isnull=True
+    ).distinct().count()
+
+    # Feedback and testimonials now use one model.
+    total_feedback = Testimonial.objects.count()
+
+    pending_feedback = Testimonial.objects.filter(
+        status=Testimonial.Status.PENDING
+    ).count()
+
+    # Job advertisement and analysis statistics.
+    total_job_advertisements = JobAdvertisement.objects.count()
+    total_analysis_results = AnalysisResult.objects.count()
+
+    # Recent users and testimonials.
+    recent_users = User.objects.order_by("-date_joined")[:5]
 
     recent_testimonials = Testimonial.objects.select_related(
         "user"
     ).order_by("-created_at")[:5]
 
+    # Recent suspicious job reports.
+    recent_reports = SuspiciousJobReport.objects.select_related(
+        "job",
+        "applicant__user",
+    ).order_by("-report_date")[:5]
+
+    # Recent feedback from the unified Testimonial model.
+    recent_feedback = Testimonial.objects.select_related(
+        "user",
+        "reviewed_by__user",
+    ).order_by("-created_at")[:5]
+
+    # Recent employers.
+    recent_employers = Employer.objects.order_by(
+        "-created_at"
+    )[:5]
+
+    # Recent employer verification records.
+    recent_verifications = (
+        EmployerVerificationRecord.objects.select_related(
+            "employer",
+            "verified_by__user",
+        ).order_by("-verification_date")[:5]
+    )
+
+    # Dashboard context.
     context = {
         "total_users": total_users,
         "total_applicants": total_applicants,
         "total_administrators": total_administrators,
+
         "pending_testimonials": pending_testimonials,
         "approved_testimonials": approved_testimonials,
+
+        "total_reports": total_reports,
+        "pending_reports": pending_reports,
+
+        "total_employers": total_employers,
+        "pending_employer_verifications": (
+            pending_employer_verifications
+        ),
+
+        "total_feedback": total_feedback,
+        "pending_feedback": pending_feedback,
+
+        "total_job_advertisements": total_job_advertisements,
+        "total_analysis_results": total_analysis_results,
+
         "recent_users": recent_users,
         "recent_testimonials": recent_testimonials,
+        "recent_reports": recent_reports,
+        "recent_feedback": recent_feedback,
+        "recent_employers": recent_employers,
+        "recent_verifications": recent_verifications,
     }
 
     return render(
         request,
         "core/AdminDashboard.html",
-        context
+        context,
     )
+
+# =========================================================
+# REVIEW, APPROVE AND REJECT USER FEEDBACK
+# =========================================================
+
+# =========================================================
+# REVIEW, APPROVE, KEEP PRIVATE AND UNDO FEEDBACK DECISIONS
+# =========================================================
+
+@login_required(login_url="login")
+@require_POST
+def testimonial_action(request, testimonial_id, action):
+
+    # Restrict feedback management to system administrators.
+    if not request.user.groups.filter(
+        name="System Administrator"
+    ).exists():
+        return HttpResponseForbidden(
+            "You are not authorised to manage feedback."
+        )
+
+    administrator = SystemAdministrator.objects.filter(
+        user=request.user
+    ).first()
+
+    if administrator is None:
+        messages.error(
+            request,
+            "Your administrator profile could not be found."
+        )
+        return redirect("admin_dashboard")
+
+    if action not in ("review", "approve", "reject", "undo"):
+        return HttpResponseForbidden("Invalid feedback action.")
+
+    with transaction.atomic():
+
+        testimonial = get_object_or_404(
+            Testimonial.objects.select_for_update(),
+            pk=testimonial_id
+        )
+
+        # -------------------------------------------------
+        # UNDO A FINAL DECISION
+        # -------------------------------------------------
+        if action == "undo":
+
+            if testimonial.status != Testimonial.Status.APPROVED:
+                messages.warning(
+                    request,
+                    "Only feedback with a final decision can be restored."
+                )
+                return redirect("admin_dashboard")
+
+            reason = request.POST.get("reason", "").strip()
+
+            if not reason:
+                messages.error(
+                    request,
+                    "Please provide a reason for undoing this decision."
+                )
+                return redirect("admin_dashboard")
+
+            # Save the previous state before restoring the feedback.
+            TestimonialDecisionLog.objects.create(
+                testimonial=testimonial,
+                administrator=administrator,
+                action="undo",
+                previous_status=testimonial.status,
+                previous_is_approved=testimonial.is_approved,
+                new_status=Testimonial.Status.UNDER_REVIEW,
+                new_is_approved=False,
+                reason=reason
+            )
+
+            # Return the feedback to Under Review.
+            testimonial.status = Testimonial.Status.UNDER_REVIEW
+            testimonial.is_approved = False
+            testimonial.reviewed_by = administrator
+            testimonial.reviewed_at = timezone.now()
+            testimonial.admin_comment = (
+                f"Previous decision reversed. Reason: {reason}"
+            )
+
+            testimonial.save()
+
+            messages.success(
+                request,
+                "Decision reversed. Feedback returned to Under Review."
+            )
+
+            return redirect("admin_dashboard")
+
+        # -------------------------------------------------
+        # PREVENT CHANGES AFTER A FINAL DECISION
+        # -------------------------------------------------
+        if testimonial.status == Testimonial.Status.APPROVED:
+            messages.warning(
+                request,
+                "A final decision has already been recorded. "
+                "Use Undo Decision to reopen this feedback."
+            )
+            return redirect("admin_dashboard")
+
+        if testimonial.status not in (
+            Testimonial.Status.PENDING,
+            Testimonial.Status.UNDER_REVIEW,
+        ):
+            messages.warning(
+                request,
+                "This feedback cannot be processed in its current status."
+            )
+            return redirect("admin_dashboard")
+
+        # -------------------------------------------------
+        # MARK AS UNDER REVIEW
+        # -------------------------------------------------
+        if action == "review":
+
+            if testimonial.status != Testimonial.Status.PENDING:
+                messages.warning(
+                    request,
+                    "This feedback is already Under Review."
+                )
+                return redirect("admin_dashboard")
+
+            testimonial.status = Testimonial.Status.UNDER_REVIEW
+            testimonial.is_approved = False
+
+            message = "Feedback marked as Under Review."
+
+        # -------------------------------------------------
+        # APPROVE FOR PUBLICATION
+        # -------------------------------------------------
+        elif action == "approve":
+
+            testimonial.status = Testimonial.Status.APPROVED
+            testimonial.is_approved = True
+
+            message = "Feedback approved for publication."
+
+        # -------------------------------------------------
+        # KEEP PRIVATE
+        # -------------------------------------------------
+        elif action == "reject":
+
+            testimonial.status = Testimonial.Status.APPROVED
+            testimonial.is_approved = False
+
+            message = "Feedback finalised and kept private."
+
+        testimonial.reviewed_by = administrator
+        testimonial.reviewed_at = timezone.now()
+        testimonial.admin_comment = request.POST.get(
+            "admin_comment", ""
+        ).strip()
+
+        testimonial.save()
+
+        messages.success(request, message)
+
+    return redirect("admin_dashboard")

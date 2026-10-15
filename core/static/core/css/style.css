@@ -6097,3 +6097,1233 @@ img {
         padding: 14px;
     }
 }
+.admin-feedback-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.admin-feedback-actions form {
+    display: inline;
+    margin: 0;
+}
+
+.admin-text-button {
+    border: 1px solid #d1d5db;
+    border-radius: 5px;
+    padding: 6px 10px;
+    background: #ffffff;
+    color: #374151;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.admin-text-button:hover {
+    background: #f3f4f6;
+}
+
+.feedback-submission-card {
+    padding: 16px;
+    margin-bottom: 16px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #ffffff;
+}
+
+.feedback-submission-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.feedback-submission-header h3 {
+    margin: 0;
+}
+
+.feedback-submission-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+    color: #6b7280;
+    font-size: 13px;
+}
+
+.status-pill {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.status-pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.status-review {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.status-approved {
+    background: #dcfce7;
+    color: #166534;
+}
+
+
+
+/* Administrator feedback notifications */
+.admin-toast-container {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 10000;
+    width: min(420px, calc(100vw - 32px));
+}
+
+.admin-toast {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    border: 1px solid #bbf7d0;
+    border-radius: 12px;
+    background: #f0fdf4;
+    color: #166534;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    animation: admin-toast-appear 0.25s ease-out;
+}
+
+.admin-toast-icon {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #dcfce7;
+    font-weight: 700;
+}
+
+.admin-toast-text {
+    flex: 1;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.admin-toast-close {
+    border: none;
+    background: transparent;
+    color: inherit;
+    font-size: 23px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.admin-toast.error {
+    background: #fef2f2;
+    border-color: #fecaca;
+    color: #991b1b;
+}
+
+.admin-toast.warning {
+    background: #fffbeb;
+    border-color: #fde68a;
+    color: #92400e;
+}
+
+.admin-toast.info {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    color: #1d4ed8;
+}
+
+@keyframes admin-toast-appear {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 600px) {
+    .admin-toast-container {
+        top: 12px;
+        right: 12px;
+        width: calc(100vw - 24px);
+    }
+}
+
+
+/* =========================================================
+   AJIRASAFE — USER FEEDBACK & TESTIMONIALS
+   Compact table, readable status badges and coloured buttons
+   Scoped exclusively to the feedback dashboard panel
+========================================================= */
+
+/* ---------- Section heading ---------- */
+
+.admin-panel[data-admin-panel="feedback"] .admin-panel-heading {
+    margin-bottom: 22px;
+}
+
+.admin-panel[data-admin-panel="feedback"] .admin-panel-heading h1 {
+    margin: 8px 0 10px;
+    color: #14213D;
+    font-size: 30px;
+    font-weight: 800;
+    line-height: 1.25;
+    letter-spacing: -0.5px;
+}
+
+.admin-panel[data-admin-panel="feedback"] .admin-panel-heading > p:last-child {
+    max-width: 850px;
+    color: #667085;
+    font-size: 14px;
+    line-height: 1.65;
+}
+
+/* ---------- Table container ---------- */
+
+.admin-panel[data-admin-panel="feedback"] .admin-table-card {
+    min-width: 0;
+    padding: 20px;
+    overflow: hidden;
+    background: #FFFFFF;
+    border: 1px solid #E1E7EF;
+    border-radius: 14px;
+    box-shadow: 0 5px 20px rgba(20, 33, 61, 0.04);
+}
+
+.admin-panel[data-admin-panel="feedback"] .admin-table-wrap {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border: 1px solid #E1E7EF;
+    border-radius: 9px;
+    background: #FFFFFF;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* ---------- Table layout ---------- */
+
+.admin-panel[data-admin-panel="feedback"] .admin-table {
+    width: 100%;
+    min-width: 900px;
+    margin: 0;
+    border-collapse: separate;
+    border-spacing: 0;
+    table-layout: fixed;
+    background: #FFFFFF;
+    font-size: 12px;
+}
+
+/* Submitted by */
+.admin-panel[data-admin-panel="feedback"] .admin-table th:nth-child(1),
+.admin-panel[data-admin-panel="feedback"] .admin-table td:nth-child(1) {
+    width: 14%;
+}
+
+/* Feedback text */
+.admin-panel[data-admin-panel="feedback"] .admin-table th:nth-child(2),
+.admin-panel[data-admin-panel="feedback"] .admin-table td:nth-child(2) {
+    width: 29%;
+}
+
+/* Rating */
+.admin-panel[data-admin-panel="feedback"] .admin-table th:nth-child(3),
+.admin-panel[data-admin-panel="feedback"] .admin-table td:nth-child(3) {
+    width: 8%;
+}
+
+/* Date submitted */
+.admin-panel[data-admin-panel="feedback"] .admin-table th:nth-child(4),
+.admin-panel[data-admin-panel="feedback"] .admin-table td:nth-child(4) {
+    width: 13%;
+}
+
+/* Review status */
+.admin-panel[data-admin-panel="feedback"] .admin-table th:nth-child(5),
+.admin-panel[data-admin-panel="feedback"] .admin-table td:nth-child(5) {
+    width: 15%;
+}
+
+/* Actions */
+.admin-panel[data-admin-panel="feedback"] .admin-table th:nth-child(6),
+.admin-panel[data-admin-panel="feedback"] .admin-table td:nth-child(6) {
+    width: 21%;
+}
+
+/* ---------- Table headings ---------- */
+
+.admin-panel[data-admin-panel="feedback"] .admin-table thead th {
+    padding: 13px 11px;
+    background: #F2F6FB;
+    color: #405571;
+    border-bottom: 1px solid #DCE5EF;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.25px;
+    line-height: 1.45;
+    text-align: left;
+    text-transform: uppercase;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+/* ---------- Table rows and cells ---------- */
+
+.admin-panel[data-admin-panel="feedback"] .admin-table tbody td {
+    padding: 15px 11px;
+    color: #475467;
+    background: #FFFFFF;
+    border-bottom: 1px solid #E9EDF2;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.55;
+    text-align: left;
+    vertical-align: middle;
+    overflow-wrap: anywhere;
+}
+
+.admin-panel[data-admin-panel="feedback"] .admin-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.admin-panel[data-admin-panel="feedback"] .admin-table tbody tr:hover td {
+    background: #F9FBFD;
+}
+
+/* Submitter name */
+.admin-panel[data-admin-panel="feedback"] .admin-table tbody td:first-child {
+    color: #14213D;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* Feedback text */
+.admin-panel[data-admin-panel="feedback"] .admin-table td.admin-feedback-text {
+    min-width: 0;
+    max-width: none;
+    color: #4F5D73;
+    font-size: 12px;
+    line-height: 1.7;
+    overflow-wrap: anywhere;
+    word-break: normal;
+}
+
+/* Rating */
+.admin-panel[data-admin-panel="feedback"] .admin-table tbody td:nth-child(3) {
+    color: #A66B00;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+/* Date */
+.admin-panel[data-admin-panel="feedback"] .admin-table tbody td:nth-child(4) {
+    color: #667085;
+    font-size: 11px;
+}
+
+/* ---------- Review status badges ---------- */
+
+.admin-panel[data-admin-panel="feedback"] .admin-status-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    max-width: 100%;
+    padding: 5px 9px;
+    border: 1px solid transparent;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.4;
+    text-align: center;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+/* Awaiting Review and Under Review */
+.admin-panel[data-admin-panel="feedback"] .admin-status-pill.warning {
+    color: #895900;
+    background: #FFF5D9;
+    border-color: #F2D58B;
+}
+
+/* Approved for publication */
+.admin-panel[data-admin-panel="feedback"] .admin-status-pill.success {
+    color: #176B40;
+    background: #E8F7EE;
+    border-color: #B9E5C8;
+}
+
+/* Finalised — Private */
+.admin-panel[data-admin-panel="feedback"] .admin-status-pill.muted {
+    color: #53657B;
+    background: #EEF2F6;
+    border-color: #DCE4ED;
+}
+
+
+/* Feedback action buttons: medium size */
+.admin-panel[data-admin-panel="feedback"] .admin-feedback-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 7px;
+    width: 100%;
+    min-width: 0;
+}
+
+.admin-panel[data-admin-panel="feedback"] .admin-feedback-actions form {
+    width: 165px;
+    max-width: 100%;
+    margin: 0;
+}
+
+.admin-panel[data-admin-panel="feedback"] .admin-feedback-actions button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 100%;
+    height: 36px;
+    min-height: 36px;
+    padding: 6px 8px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.25;
+    text-align: center;
+    white-space: normal;
+    cursor: pointer;
+    box-shadow: none;
+    transform: none;
+}
+
+/* Blue: Mark as Under Review */
+.admin-panel[data-admin-panel="feedback"]
+.admin-feedback-actions button.action-review {
+    color: #fff !important;
+    background: #2563eb !important;
+    border-color: #2563eb !important;
+}
+
+/* Green: Approve for Publication */
+.admin-panel[data-admin-panel="feedback"]
+.admin-feedback-actions button.action-approve {
+    color: #fff !important;
+    background: #198754 !important;
+    border-color: #198754 !important;
+}
+
+/* Red: Keep Private */
+.admin-panel[data-admin-panel="feedback"]
+.admin-feedback-actions button.action-private {
+    color: #fff !important;
+    background: #dc3545 !important;
+    border-color: #dc3545 !important;
+}
+
+.admin-panel[data-admin-panel="feedback"]
+.admin-feedback-actions button.action-review:hover {
+    background: #1d4ed8 !important;
+}
+
+.admin-panel[data-admin-panel="feedback"]
+.admin-feedback-actions button.action-approve:hover {
+    background: #146c43 !important;
+}
+
+.admin-panel[data-admin-panel="feedback"]
+.admin-feedback-actions button.action-private:hover {
+    background: #bb2d3b !important;
+}
+
+
+/* Keyboard accessibility */
+.admin-panel[data-admin-panel="feedback"]
+.admin-feedback-actions button:focus-visible {
+    outline: 2px solid #168C8C;
+    outline-offset: 2px;
+}
+
+/* ---------- Footer note ---------- */
+
+.admin-panel[data-admin-panel="feedback"] .admin-footnote {
+    margin-top: 15px;
+    padding: 12px 14px;
+    color: #667085;
+    background: #F5F8FC;
+    border-left: 3px solid #168C8C;
+    border-radius: 7px;
+    font-size: 11px;
+    line-height: 1.6;
+}
+
+/* ---------- Responsive layout ---------- */
+
+@media (max-width: 1100px) {
+    .admin-panel[data-admin-panel="feedback"] .admin-table {
+        min-width: 900px;
+    }
+}
+
+@media (max-width: 760px) {
+    .admin-panel[data-admin-panel="feedback"] .admin-panel-heading h1 {
+        font-size: 25px;
+    }
+
+    .admin-panel[data-admin-panel="feedback"] .admin-panel-heading > p:last-child {
+        font-size: 13px;
+    }
+
+    .admin-panel[data-admin-panel="feedback"] .admin-table-card {
+        padding: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .admin-panel[data-admin-panel="feedback"] .admin-panel-heading h1 {
+        font-size: 22px;
+    }
+
+    .admin-panel[data-admin-panel="feedback"] .admin-table-card {
+        padding: 9px;
+    }
+}
+
+
+/* Applicant feedback status badges */
+.feedback-status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 10px;
+    border: 1px solid transparent;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.4;
+    white-space: nowrap;
+}
+
+.feedback-status.pending {
+    color: #946200;
+    background: #fff5d9;
+    border-color: #f2d58b;
+}
+
+.feedback-status.under-review {
+    color: #1d4ed8;
+    background: #eaf2ff;
+    border-color: #bfd5ff;
+}
+
+.feedback-status.approved {
+    color: #176b40;
+    background: #e8f7ee;
+    border-color: #b9e5c8;
+}
+
+.feedback-status.private {
+    color: #53657b;
+    background: #eef2f6;
+    border-color: #dce4ed;
+}
+
+
+
+/* Compact undo-decision interface */
+.admin-undo-form {
+    width: 100%;
+    max-width: 260px;
+    margin-top: 10px;
+    padding: 12px;
+    border: 1px solid #dbe3ee;
+    border-radius: 8px;
+    background: #f8fafc;
+    box-sizing: border-box;
+}
+
+.admin-undo-form[hidden] {
+    display: none !important;
+}
+
+.admin-undo-form label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+}
+
+.admin-undo-form textarea {
+    display: block;
+    width: 100%;
+    min-height: 70px;
+    padding: 8px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    box-sizing: border-box;
+    font: inherit;
+    font-size: 13px;
+    resize: vertical;
+}
+
+.admin-undo-form textarea:focus {
+    outline: 2px solid #93c5fd;
+    outline-offset: 1px;
+}
+
+.admin-undo-form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.undo-toggle-button {
+    white-space: nowrap;
+}
+
+.undo-cancel-button {
+    color: #64748b;
+}
+
+
+
+
+/* Feedback action buttons */
+
+/* ==========================================
+   AJIRASAFE: COMPACT FEEDBACK ACTIONS
+   ========================================== */
+
+
+/* ======================================
+   COMPACT ADMIN FEEDBACK ACTIONS
+   ====================================== */
+
+.admin-feedback-actions {
+    display: flex;
+    flex-direction: row !important;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 7px;
+    min-width: 250px;
+    max-width: 360px;
+}
+
+/* Keep action forms compact */
+.admin-feedback-actions > form:not(.admin-undo-form) {
+    display: inline-flex;
+    flex: 0 0 auto;
+    margin: 0;
+}
+
+/* Match the compact size of status badges */
+.admin-feedback-actions .admin-action-button,
+.admin-feedback-actions .admin-text-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: auto !important;
+    min-width: 0;
+    min-height: 30px;
+    padding: 6px 10px;
+    border: 1px solid #dbe3ed;
+    border-radius: 7px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    box-shadow: none;
+    transform: none;
+}
+
+/* Review */
+.admin-feedback-actions .review-action {
+    color: #1d4ed8;
+    background: #eff6ff;
+    border-color: #bfdbfe;
+}
+
+/* Approve */
+.admin-feedback-actions .approve-action {
+    color: #15803d;
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+}
+
+/* Keep Private */
+.admin-feedback-actions .private-action {
+    color: #b45309;
+    background: #fffbeb;
+    border-color: #fde68a;
+}
+
+/* Highlight the saved final decision */
+.admin-feedback-actions .approve-action.is-selected {
+    background: #dcfce7;
+    border-color: #86efac;
+    color: #166534;
+    opacity: 1;
+}
+
+.admin-feedback-actions .private-action.is-selected {
+    background: #fef3c7;
+    border-color: #fcd34d;
+    color: #92400e;
+    opacity: 1;
+}
+
+/* Disabled actions remain readable but subdued */
+.admin-feedback-actions .admin-action-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Undo is a secondary action */
+.admin-feedback-actions .undo-action {
+    color: #475569;
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+
+/* Give Undo its own compact row */
+.admin-feedback-actions > .undo-action {
+    flex: 0 0 auto;
+}
+
+.admin-feedback-actions .admin-undo-form {
+    flex: 1 0 100%;
+    max-width: 280px;
+    margin-top: 4px;
+    padding: 10px;
+    border: 1px solid #dbe3ed;
+    border-radius: 8px;
+    background: #f8fafc;
+    box-sizing: border-box;
+}
+
+.admin-feedback-actions .admin-undo-form[hidden] {
+    display: none !important;
+}
+
+.admin-undo-form textarea {
+    width: 100%;
+    box-sizing: border-box;
+    font: inherit;
+    font-size: 12px;
+}
+
+.admin-undo-form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-top: 8px;
+}
+
+
+
+/* =========================================
+   AJIRASAFE - REFINED FEEDBACK ACTIONS
+   ========================================= */
+
+
+/* ================================================
+   AJIRASAFE - FINAL FEEDBACK ACTION BUTTON DESIGN
+   ================================================ */
+
+.admin-panel[data-admin-panel="feedback"] .admin-feedback-actions {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start;
+    gap: 10px;
+    width: 100%;
+    min-width: 0;
+}
+
+/* Review, Approve and Keep Private on one row */
+.admin-panel[data-admin-panel="feedback"] .admin-primary-actions {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
+/* Prevent forms from stretching */
+.admin-panel[data-admin-panel="feedback"] .admin-primary-actions form {
+    display: inline-flex !important;
+    flex: 0 0 auto;
+    width: auto !important;
+    margin: 0;
+}
+
+/* Shared button appearance */
+.admin-panel[data-admin-panel="feedback"] .feedback-action-btn {
+    display: inline-flex !important;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+
+    width: auto !important;
+    min-width: 0;
+    min-height: 40px;
+    padding: 9px 16px;
+
+    border: 1px solid #dbe3ed;
+    border-radius: 9px;
+
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+
+    cursor: pointer;
+    box-shadow: none;
+    transform: none;
+
+    transition:
+        background-color 0.18s ease,
+        border-color 0.18s ease,
+        color 0.18s ease;
+}
+
+/* Keyboard accessibility */
+.admin-panel[data-admin-panel="feedback"] .feedback-action-btn:focus-visible {
+    outline: 3px solid rgba(22, 140, 140, 0.35);
+    outline-offset: 2px;
+}
+
+/* Review button */
+.admin-panel[data-admin-panel="feedback"] .action-review {
+    color: #2457e6 !important;
+    background: #eff6ff !important;
+    border-color: #bfdbfe !important;
+}
+
+.admin-panel[data-admin-panel="feedback"] .action-review:hover:not(:disabled) {
+    background: #dbeafe !important;
+    border-color: #93c5fd !important;
+}
+
+/* Approve button */
+.admin-panel[data-admin-panel="feedback"] .action-approve {
+    color: #64748b !important;
+    background: #ffffff !important;
+    border-color: #d1d5db !important;
+}
+
+.admin-panel[data-admin-panel="feedback"] .action-approve:hover:not(:disabled) {
+    color: #166534 !important;
+    background: #f0fdf4 !important;
+    border-color: #bbf7d0 !important;
+}
+
+/* Selected Approved state */
+.admin-panel[data-admin-panel="feedback"] .action-approve.is-selected {
+    color: #166534 !important;
+    background: #dcfce7 !important;
+    border-color: #86efac !important;
+    box-shadow: inset 0 0 0 1px #86efac;
+    opacity: 1;
+}
+
+/* Keep Private button */
+.admin-panel[data-admin-panel="feedback"] .action-private {
+    color: #92400e !important;
+    background: #ffffff !important;
+    border-color: #d1d5db !important;
+}
+
+.admin-panel[data-admin-panel="feedback"] .action-private:hover:not(:disabled) {
+    background: #fffbeb !important;
+    border-color: #fde68a !important;
+}
+
+/* Selected Kept Private state */
+.admin-panel[data-admin-panel="feedback"] .action-private.is-selected {
+    color: #92400e !important;
+    background: #fef3c7 !important;
+    border-color: #fcd34d !important;
+    box-shadow: inset 0 0 0 1px #fcd34d;
+    opacity: 1;
+}
+
+/* Disabled actions after a final decision */
+.admin-panel[data-admin-panel="feedback"] .feedback-action-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+    transform: none;
+}
+
+.admin-panel[data-admin-panel="feedback"] .feedback-action-btn.is-selected:disabled {
+    opacity: 1;
+}
+
+/* Undo Decision: separate, neutral secondary button */
+.admin-panel[data-admin-panel="feedback"] > .admin-feedback-actions > .action-undo,
+.admin-panel[data-admin-panel="feedback"] .admin-feedback-actions > .action-undo {
+    align-self: flex-start;
+    min-height: 40px;
+    color: #334155 !important;
+    background: #ffffff !important;
+    border-color: #d1d5db !important;
+}
+
+.admin-panel[data-admin-panel="feedback"] .admin-feedback-actions > .action-undo:hover {
+    background: #f8fafc !important;
+    border-color: #94a3b8 !important;
+}
+
+/* Undo reason form */
+.admin-panel[data-admin-panel="feedback"] .admin-undo-form {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 9px;
+
+    width: 100%;
+    max-width: 320px;
+    margin: 0;
+    padding: 13px;
+
+    border: 1px solid #dbe3ed;
+    border-radius: 9px;
+    background: #f8fafc;
+    box-sizing: border-box;
+}
+
+.admin-panel[data-admin-panel="feedback"] .admin-undo-form[hidden] {
+    display: none !important;
+}
+
+.admin-panel[data-admin-panel="feedback"] .admin-undo-form label {
+    color: #334155;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.admin-panel[data-admin-panel="feedback"] .admin-undo-form textarea {
+    display: block;
+    width: 100%;
+    min-height: 75px;
+    padding: 9px;
+
+    border: 1px solid #cbd5e1;
+    border-radius: 7px;
+    background: #ffffff;
+
+    box-sizing: border-box;
+    font: inherit;
+    font-size: 13px;
+    resize: vertical;
+}
+
+.admin-panel[data-admin-panel="feedback"] .admin-undo-form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.admin-panel[data-admin-panel="feedback"] .action-cancel {
+    color: #475569 !important;
+    background: #ffffff !important;
+    border-color: #d1d5db !important;
+}
+
+/* Responsive sizing */
+@media (max-width: 760px) {
+    .admin-panel[data-admin-panel="feedback"] .admin-primary-actions {
+        gap: 6px;
+    }
+
+    .admin-panel[data-admin-panel="feedback"] .feedback-action-btn {
+        min-height: 36px;
+        padding: 8px 10px;
+        font-size: 12px;
+    }
+}
+
+
+
+/* Fix: keep all three primary actions on one row */
+.admin-panel[data-admin-panel="feedback"] .admin-primary-actions {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center;
+    gap: 6px;
+    width: max-content;
+    max-width: none;
+}
+
+/* Prevent each form from wrapping onto a new line */
+.admin-panel[data-admin-panel="feedback"] .admin-primary-actions form {
+    display: inline-flex !important;
+    flex: 0 0 auto !important;
+    width: auto !important;
+    margin: 0 !important;
+}
+
+/* Keep button labels on one line and reduce horizontal padding */
+.admin-panel[data-admin-panel="feedback"] .admin-primary-actions .feedback-action-btn {
+    display: inline-flex !important;
+    flex: 0 0 auto !important;
+    width: auto !important;
+    min-width: 0;
+    min-height: 38px;
+    padding: 8px 10px;
+    font-size: 12px;
+    white-space: nowrap !important;
+}
+
+/* Give the Actions column enough room */
+@media (min-width: 1060px) {
+    .admin-panel[data-admin-panel="feedback"] .admin-table th:nth-child(6),
+    .admin-panel[data-admin-panel="feedback"] .admin-table td:nth-child(6) {
+        width: 25% !important;
+    }
+
+    .admin-panel[data-admin-panel="feedback"] .admin-table th:nth-child(2),
+    .admin-panel[data-admin-panel="feedback"] .admin-table td:nth-child(2) {
+        width: 24% !important;
+    }
+}
+
+
+
+
+
+/* ==========================================
+   FIXED FEEDBACK TABLE ALIGNMENT
+   ========================================== */
+
+/* Align the status badge and primary action row */
+.admin-panel[data-admin-panel="feedback"] .admin-table tbody tr {
+    height: auto;
+}
+
+.admin-panel[data-admin-panel="feedback"] .admin-table tbody td:nth-child(5),
+.admin-panel[data-admin-panel="feedback"] .admin-table tbody td:nth-child(6) {
+    vertical-align: middle !important;
+}
+
+/* Keep the status badge centred */
+.admin-panel[data-admin-panel="feedback"] .admin-table tbody td:nth-child(5) {
+    text-align: center;
+}
+
+/* Actions cell becomes the positioning reference */
+.admin-panel[data-admin-panel="feedback"] .admin-table tbody td:nth-child(6) {
+    position: relative;
+    min-width: 390px;
+}
+
+/* Align the primary action buttons with the status badge */
+.admin-panel[data-admin-panel="feedback"] .admin-feedback-actions {
+    position: relative;
+    display: block !important;
+    width: 100%;
+    min-width: 0;
+    min-height: 76px;
+    padding-top: 0;
+    box-sizing: border-box;
+}
+
+/* Primary row centred vertically in the actions area */
+.admin-panel[data-admin-panel="feedback"] .admin-primary-actions {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: max-content;
+    max-width: none;
+}
+
+/* Keep each primary form compact */
+.admin-panel[data-admin-panel="feedback"] .admin-primary-actions form {
+    display: inline-flex !important;
+    flex: 0 0 auto !important;
+    width: auto !important;
+    margin: 0 !important;
+}
+
+/* Consistent button dimensions */
+.admin-panel[data-admin-panel="feedback"] .feedback-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 32px !important;
+    min-height: 32px !important;
+    padding: 6px 10px !important;
+    box-sizing: border-box;
+    font-size: 12px !important;
+    line-height: 1.2 !important;
+    white-space: nowrap;
+}
+
+/* Centre Undo beneath the primary row */
+.admin-panel[data-admin-panel="feedback"] .admin-feedback-actions > .action-undo {
+    position: absolute;
+    top: calc(50% + 32px);
+    left: 50%;
+    transform: translateX(-50%);
+    height: 32px !important;
+    min-height: 32px !important;
+    margin: 0 !important;
+}
+
+/* Keep the undo reason form below the actions */
+.admin-panel[data-admin-panel="feedback"] .admin-feedback-actions > .admin-undo-form {
+    position: relative;
+    margin: 116px auto 0;
+    width: 100%;
+    max-width: 280px;
+}
+
+.admin-panel[data-admin-panel="feedback"] .admin-undo-form[hidden] {
+    display: none !important;
+}
+
+/* Allow the actions cell to fit the primary row */
+@media (min-width: 1060px) {
+    .admin-panel[data-admin-panel="feedback"] .admin-table th:nth-child(6),
+    .admin-panel[data-admin-panel="feedback"] .admin-table td:nth-child(6) {
+        width: 390px !important;
+    }
+}
+
+/* Smaller screens: use normal flow instead of positioning */
+@media (max-width: 1059px) {
+    .admin-panel[data-admin-panel="feedback"] .admin-table tbody td:nth-child(6) {
+        min-width: 390px;
+    }
+
+    .admin-panel[data-admin-panel="feedback"] .admin-feedback-actions {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        gap: 8px;
+        min-height: 0;
+    }
+
+    .admin-panel[data-admin-panel="feedback"] .admin-primary-actions {
+        position: static;
+        transform: none;
+        flex-wrap: nowrap !important;
+        justify-content: center;
+        width: max-content;
+    }
+
+    .admin-panel[data-admin-panel="feedback"] .admin-feedback-actions > .action-undo {
+        position: static;
+        transform: none;
+        align-self: center !important;
+    }
+
+    .admin-panel[data-admin-panel="feedback"] .admin-feedback-actions > .admin-undo-form {
+        margin: 0;
+    }
+}
+
+
+
+/* FIX: Keep Undo Decision fully visible */
+
+.admin-panel[data-admin-panel="feedback"] .admin-feedback-actions {
+    position: relative !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 0 !important;
+    padding: 8px 0 12px;
+    box-sizing: border-box;
+}
+
+/* Remove positioning that was clipping the primary actions */
+.admin-panel[data-admin-panel="feedback"] .admin-primary-actions {
+    position: static !important;
+    transform: none !important;
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: max-content;
+    max-width: 100%;
+}
+
+/* Keep each primary form compact */
+.admin-panel[data-admin-panel="feedback"] .admin-primary-actions form {
+    display: inline-flex !important;
+    flex: 0 0 auto !important;
+    width: auto !important;
+    margin: 0 !important;
+}
+
+/* Undo Decision stays beneath the primary buttons */
+.admin-panel[data-admin-panel="feedback"] .admin-feedback-actions > .action-undo {
+    position: static !important;
+    transform: none !important;
+    display: inline-flex !important;
+    align-self: center !important;
+    flex-shrink: 0;
+    height: 32px !important;
+    min-height: 32px !important;
+    margin: 0 !important;
+    visibility: visible !important;
+}
+
+/* Prevent the table cell from clipping the button */
+.admin-panel[data-admin-panel="feedback"] .admin-table tbody td:nth-child(6) {
+    overflow: visible !important;
+    vertical-align: middle !important;
+}
+
+/* Keep the reason form in normal flow */
+.admin-panel[data-admin-panel="feedback"] .admin-feedback-actions > .admin-undo-form {
+    position: static !important;
+    transform: none !important;
+    margin: 0 auto !important;
+    width: 100%;
+    max-width: 280px;
+}
+
+.admin-panel[data-admin-panel="feedback"] .admin-undo-form[hidden] {
+    display: none !important;
+}

@@ -18,8 +18,15 @@ urlpatterns = [
     "dashboard/",
     views.dashboard,
     name="dashboard"
-),
-path("admin-dashboard/", views.admin_dashboard, name="admin_dashboard"),
+    ),
+    path(
+    "feedback/<int:testimonial_id>/<str:action>/",
+    views.testimonial_action,
+    name="testimonial_action",
+   ),
+   path("admin-dashboard/", views.admin_dashboard, name="admin_dashboard"),
 
-path("logout/", views.logout_view, name="logout"),
+   
+
+   path("logout/", views.logout_view, name="logout"),
 ]

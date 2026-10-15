@@ -1,5 +1,6 @@
 
 {% extends "core/base.html" %}
+
 {% load static %}
 
 {% block title %}System Administrator Dashboard | AjiraSafe{% endblock %}
@@ -9,6 +10,7 @@
 {% endblock %}
 
 {% block content %}
+
 <div class="admin-dashboard">
 
     <!-- SIDEBAR -->
@@ -29,58 +31,32 @@
 
         <nav class="admin-nav" aria-label="Dashboard sections">
 
-            <button type="button"
-                    class="admin-nav-link active"
-                    data-admin-tab="overview"
-                    aria-selected="true">
+            <button type="button" class="admin-nav-link active" data-admin-tab="overview" aria-selected="true">
                 <span class="admin-nav-icon">▦</span>
                 Overview
             </button>
 
-            <button type="button"
-                    class="admin-nav-link"
-                    data-admin-tab="users"
-                    aria-selected="false">
+            <button type="button" class="admin-nav-link" data-admin-tab="users" aria-selected="false">
                 <span class="admin-nav-icon">♙</span>
                 Manage Users
             </button>
 
-            <button type="button"
-                    class="admin-nav-link"
-                    data-admin-tab="reports"
-                    aria-selected="false">
+            <button type="button" class="admin-nav-link" data-admin-tab="reports" aria-selected="false">
                 <span class="admin-nav-icon">⚑</span>
                 Suspicious Reports
             </button>
 
-            <button type="button"
-                    class="admin-nav-link"
-                    data-admin-tab="employers"
-                    aria-selected="false">
+            <button type="button" class="admin-nav-link" data-admin-tab="employers" aria-selected="false">
                 <span class="admin-nav-icon">▣</span>
                 Employer Verification
             </button>
 
-            <button type="button"
-                    class="admin-nav-link"
-                    data-admin-tab="feedback"
-                    aria-selected="false">
+            <button type="button" class="admin-nav-link" data-admin-tab="feedback" aria-selected="false">
                 <span class="admin-nav-icon">✉</span>
-                User Feedback
+                User Feedback &amp; Testimonials
             </button>
 
-            <button type="button"
-                    class="admin-nav-link"
-                    data-admin-tab="testimonials"
-                    aria-selected="false">
-                <span class="admin-nav-icon">★</span>
-                Testimonials
-            </button>
-
-            <button type="button"
-                    class="admin-nav-link"
-                    data-admin-tab="activity"
-                    aria-selected="false">
+            <button type="button" class="admin-nav-link" data-admin-tab="activity" aria-selected="false">
                 <span class="admin-nav-icon">◷</span>
                 System Activities
             </button>
@@ -88,6 +64,7 @@
         </nav>
 
         <div class="admin-sidebar-links">
+
             <a href="{% url 'home' %}" class="admin-side-link">
                 <span>⌂</span> Visit Website
             </a>
@@ -95,6 +72,7 @@
             <a href="{% url 'logout' %}" class="admin-side-link admin-logout">
                 <span>↪</span> Log Out
             </a>
+
         </div>
 
         <div class="admin-help-card">
@@ -108,12 +86,43 @@
 
     </aside>
 
+    {% if messages %}
+        <div class="admin-toast-container"
+             aria-live="polite"
+             aria-atomic="true">
+
+            {% for message in messages %}
+                <div class="admin-toast {{ message.tags }}" role="alert">
+
+                    <span class="admin-toast-icon" aria-hidden="true">
+                        {% if message.tags == "success" %}
+                            ✓
+                        {% else %}
+                            !
+                        {% endif %}
+                    </span>
+
+                    <span class="admin-toast-text">
+                        {{ message }}
+                    </span>
+
+                    <button type="button"
+                            class="admin-toast-close"
+                            aria-label="Dismiss notification">
+                        &times;
+                    </button>
+
+                </div>
+            {% endfor %}
+
+        </div>
+    {% endif %}
+
     <!-- MAIN CONTENT -->
     <main class="admin-main">
 
         <!-- OVERVIEW -->
-        <section class="admin-panel active-admin-panel"
-                 data-admin-panel="overview">
+        <section class="admin-panel active-admin-panel" data-admin-panel="overview">
 
             <header class="admin-welcome">
                 <div>
@@ -139,12 +148,8 @@
             <!-- TRUST BANNER -->
             <section class="admin-trust-banner">
                 <div class="admin-trust-mark">✓</div>
-
                 <div>
-                    <strong>
-                        Protecting job seekers starts with careful review
-                    </strong>
-
+                    <strong>Protecting job seekers starts with careful review</strong>
                     <p>
                         Review suspicious advertisements, maintain accurate
                         employer verification records, and handle user
@@ -161,14 +166,9 @@
                         <span class="admin-summary-icon blue">♙</span>
                         <span class="admin-summary-caption">ACCOUNTS</span>
                     </div>
-
                     <p class="admin-summary-label">Registered users</p>
-                    <strong class="admin-summary-number">
-                        {{ total_users|default:0 }}
-                    </strong>
-                    <span class="admin-summary-note">
-                        All registered accounts
-                    </span>
+                    <strong class="admin-summary-number">{{ total_users|default:0 }}</strong>
+                    <span class="admin-summary-note">All registered accounts</span>
                 </article>
 
                 <article class="admin-summary-card">
@@ -176,14 +176,9 @@
                         <span class="admin-summary-icon teal">✓</span>
                         <span class="admin-summary-caption">COMMUNITY</span>
                     </div>
-
                     <p class="admin-summary-label">Job applicants</p>
-                    <strong class="admin-summary-number">
-                        {{ total_applicants|default:0 }}
-                    </strong>
-                    <span class="admin-summary-note">
-                        Applicant accounts
-                    </span>
+                    <strong class="admin-summary-number">{{ total_applicants|default:0 }}</strong>
+                    <span class="admin-summary-note">Applicant accounts</span>
                 </article>
 
                 <article class="admin-summary-card">
@@ -191,14 +186,9 @@
                         <span class="admin-summary-icon violet">⚿</span>
                         <span class="admin-summary-caption">ACCESS</span>
                     </div>
-
                     <p class="admin-summary-label">Administrators</p>
-                    <strong class="admin-summary-number">
-                        {{ total_administrators|default:0 }}
-                    </strong>
-                    <span class="admin-summary-note">
-                        Accounts with admin role
-                    </span>
+                    <strong class="admin-summary-number">{{ total_administrators|default:0 }}</strong>
+                    <span class="admin-summary-note">Accounts with admin role</span>
                 </article>
 
                 <article class="admin-summary-card">
@@ -206,14 +196,9 @@
                         <span class="admin-summary-icon amber">★</span>
                         <span class="admin-summary-caption">TESTIMONIALS</span>
                     </div>
-
                     <p class="admin-summary-label">Awaiting approval</p>
-                    <strong class="admin-summary-number">
-                        {{ pending_testimonials|default:0 }}
-                    </strong>
-                    <span class="admin-summary-note">
-                        Testimonials not approved
-                    </span>
+                    <strong class="admin-summary-number">{{ pending_testimonials|default:0 }}</strong>
+                    <span class="admin-summary-note">Testimonials not approved</span>
                 </article>
 
             </section>
@@ -231,36 +216,28 @@
 
                 <div class="admin-quick-grid">
 
-                    <button type="button"
-                            class="admin-quick-card"
-                            data-admin-open="users">
+                    <button type="button" class="admin-quick-card" data-admin-open="users">
                         <span class="admin-quick-icon blue">♙</span>
                         <strong>Manage system users</strong>
                         <span>Review registered accounts and their roles.</span>
                         <span class="admin-card-link">View users →</span>
                     </button>
 
-                    <button type="button"
-                            class="admin-quick-card"
-                            data-admin-open="reports">
+                    <button type="button" class="admin-quick-card" data-admin-open="reports">
                         <span class="admin-quick-icon amber">⚑</span>
                         <strong>Review suspicious reports</strong>
                         <span>Inspect reports submitted by job applicants.</span>
                         <span class="admin-card-link">Review reports →</span>
                     </button>
 
-                    <button type="button"
-                            class="admin-quick-card"
-                            data-admin-open="employers">
+                    <button type="button" class="admin-quick-card" data-admin-open="employers">
                         <span class="admin-quick-icon teal">▣</span>
                         <strong>Verify employers</strong>
                         <span>Manage employer verification information.</span>
                         <span class="admin-card-link">View employers →</span>
                     </button>
 
-                    <button type="button"
-                            class="admin-quick-card"
-                            data-admin-open="feedback">
+                    <button type="button" class="admin-quick-card" data-admin-open="feedback">
                         <span class="admin-quick-icon violet">✉</span>
                         <strong>Review user feedback</strong>
                         <span>Read feedback and track review status.</span>
@@ -279,16 +256,13 @@
                         <p>Latest accounts registered on AjiraSafe.</p>
                     </div>
 
-                    <button type="button"
-                            class="admin-text-button"
-                            data-admin-open="users">
+                    <button type="button" class="admin-text-button" data-admin-open="users">
                         View all users →
                     </button>
                 </div>
 
                 <div class="admin-table-wrap">
                     <table class="admin-table">
-
                         <thead>
                             <tr>
                                 <th>User</th>
@@ -300,57 +274,43 @@
 
                         <tbody>
                             {% for account in recent_users %}
-                            <tr>
-                                <td>
-                                    <div class="admin-user-cell">
-                                        <span class="admin-table-avatar">
-                                            {{ account.first_name|default:account.username|slice:":1"|upper }}
-                                        </span>
+                                <tr>
+                                    <td>
+                                        <div class="admin-user-cell">
+                                            <span class="admin-table-avatar">
+                                                {{ account.first_name|default:account.username|slice:":1"|upper }}
+                                            </span>
+                                            <span>{{ account.get_full_name|default:account.username }}</span>
+                                        </div>
+                                    </td>
 
-                                        <span>
-                                            {{ account.get_full_name|default:account.username }}
-                                        </span>
-                                    </div>
-                                </td>
+                                    <td>{{ account.email|default:"—" }}</td>
+                                    <td>{{ account.date_joined|date:"d M Y" }}</td>
 
-                                <td>{{ account.email|default:"—" }}</td>
-
-                                <td>
-                                    {{ account.date_joined|date:"d M Y" }}
-                                </td>
-
-                                <td>
-                                    {% if account.is_active %}
-                                        <span class="admin-status-pill success">
-                                            Active
-                                        </span>
-                                    {% else %}
-                                        <span class="admin-status-pill muted">
-                                            Inactive
-                                        </span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-
+                                    <td>
+                                        {% if account.is_active %}
+                                            <span class="admin-status-pill success">Active</span>
+                                        {% else %}
+                                            <span class="admin-status-pill muted">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
                             {% empty %}
-                            <tr>
-                                <td colspan="4" class="admin-empty-cell">
-                                    No registered users found.
-                                </td>
-                            </tr>
+                                <tr>
+                                    <td colspan="4" class="admin-empty-cell">
+                                        No registered users found.
+                                    </td>
+                                </tr>
                             {% endfor %}
                         </tbody>
-
                     </table>
                 </div>
-            </section>
 
+            </section>
         </section>
 
         <!-- MANAGE USERS -->
-        <section class="admin-panel"
-                 data-admin-panel="users"
-                 hidden>
+        <section class="admin-panel" data-admin-panel="users" hidden>
 
             <div class="admin-panel-heading">
                 <p class="admin-eyebrow">ACCOUNT ADMINISTRATION</p>
@@ -372,12 +332,11 @@
             </div>
 
             <section class="admin-content-section admin-table-card">
+
                 <div class="admin-table-heading">
                     <div>
                         <h2>Registered accounts</h2>
-                        <p>
-                            {{ total_users|default:0 }} account(s) in the system.
-                        </p>
+                        <p>{{ total_users|default:0 }} account(s) in the system.</p>
                     </div>
                 </div>
 
@@ -395,48 +354,34 @@
 
                         <tbody>
                             {% for account in recent_users %}
-                            <tr>
-                                <td>
-                                    {{ account.get_full_name|default:account.username }}
-                                </td>
+                                <tr>
+                                    <td>{{ account.get_full_name|default:account.username }}</td>
+                                    <td>{{ account.email|default:"—" }}</td>
 
-                                <td>{{ account.email|default:"—" }}</td>
+                                    <td>
+                                        {% for group in account.groups.all %}
+                                            <span class="admin-status-pill info">{{ group.name }}</span>
+                                        {% empty %}
+                                            <span class="admin-status-pill muted">Unassigned</span>
+                                        {% endfor %}
+                                    </td>
 
-                                <td>
-                                    {% for group in account.groups.all %}
-                                        <span class="admin-status-pill info">
-                                            {{ group.name }}
-                                        </span>
-                                    {% empty %}
-                                        <span class="admin-status-pill muted">
-                                            Unassigned
-                                        </span>
-                                    {% endfor %}
-                                </td>
+                                    <td>{{ account.date_joined|date:"d M Y" }}</td>
 
-                                <td>
-                                    {{ account.date_joined|date:"d M Y" }}
-                                </td>
-
-                                <td>
-                                    {% if account.is_active %}
-                                        <span class="admin-status-pill success">
-                                            Active
-                                        </span>
-                                    {% else %}
-                                        <span class="admin-status-pill muted">
-                                            Inactive
-                                        </span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-
+                                    <td>
+                                        {% if account.is_active %}
+                                            <span class="admin-status-pill success">Active</span>
+                                        {% else %}
+                                            <span class="admin-status-pill muted">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
                             {% empty %}
-                            <tr>
-                                <td colspan="5" class="admin-empty-cell">
-                                    No registered users found.
-                                </td>
-                            </tr>
+                                <tr>
+                                    <td colspan="5" class="admin-empty-cell">
+                                        No registered users found.
+                                    </td>
+                                </tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -447,14 +392,12 @@
                     registered accounts. Pagination and secure account
                     management actions can be added next.
                 </p>
-            </section>
 
+            </section>
         </section>
 
         <!-- SUSPICIOUS REPORTS -->
-        <section class="admin-panel"
-                 data-admin-panel="reports"
-                 hidden>
+        <section class="admin-panel" data-admin-panel="reports" hidden>
 
             <div class="admin-panel-heading">
                 <p class="admin-eyebrow">COMMUNITY SAFETY</p>
@@ -479,9 +422,7 @@
         </section>
 
         <!-- EMPLOYER VERIFICATION -->
-        <section class="admin-panel"
-                 data-admin-panel="employers"
-                 hidden>
+        <section class="admin-panel" data-admin-panel="employers" hidden>
 
             <div class="admin-panel-heading">
                 <p class="admin-eyebrow">EMPLOYER TRUST</p>
@@ -504,120 +445,216 @@
 
         </section>
 
-        <!-- USER FEEDBACK -->
+        <!-- USER FEEDBACK & TESTIMONIALS -->
         <section class="admin-panel"
                  data-admin-panel="feedback"
                  hidden>
 
             <div class="admin-panel-heading">
                 <p class="admin-eyebrow">USER EXPERIENCE</p>
-                <h1>User feedback</h1>
+                <h1>User Feedback &amp; Testimonials</h1>
                 <p>
-                    Review feedback submitted by applicants and
-                    record follow-up status.
-                </p>
-            </div>
-
-            <div class="admin-empty-feature">
-                <span class="admin-empty-icon violet">✉</span>
-                <h2>Feedback management is not connected yet</h2>
-                <p>
-                    The current Testimonial model is for public
-                    testimonials, not the separate system-feedback
-                    workflow in your diagrams. A dedicated feedback
-                    model will be implemented for this feature.
-                </p>
-            </div>
-
-        </section>
-
-        <!-- TESTIMONIALS -->
-        <section class="admin-panel"
-                 data-admin-panel="testimonials"
-                 hidden>
-
-            <div class="admin-panel-heading">
-                <p class="admin-eyebrow">PUBLIC CONTENT</p>
-                <h1>Testimonials</h1>
-                <p>
-                    Review recent testimonials and see which
-                    submissions are approved.
+                    Review user submissions, track their review status,
+                    and manage which testimonials appear publicly on AjiraSafe.
                 </p>
             </div>
 
             <section class="admin-content-section admin-table-card">
+
                 <div class="admin-table-wrap">
                     <table class="admin-table">
+
                         <thead>
                             <tr>
                                 <th>Submitted by</th>
                                 <th>Feedback</th>
                                 <th>Rating</th>
-                                <th>Date</th>
-                                <th>Status</th>
+                                <th>Date submitted</th>
+                                <th>Review status</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
 
                         <tbody>
-                            {% for testimonial in recent_testimonials %}
-                            <tr>
-                                <td>
-                                    {{ testimonial.user.get_full_name|default:testimonial.user.username }}
-                                </td>
+                            {% for testimonial in recent_feedback %}
+                                <tr>
 
-                                <td class="admin-feedback-text">
-                                    {{ testimonial.feedback|truncatechars:100 }}
-                                </td>
+                                    <td>
+                                        {{ testimonial.user.get_full_name|default:testimonial.user.username }}
+                                    </td>
 
-                                <td>{{ testimonial.rating }}/5</td>
+                                    <td class="admin-feedback-text">
+                                        {{ testimonial.feedback|truncatechars:100 }}
+                                    </td>
 
-                                <td>
-                                    {{ testimonial.created_at|date:"d M Y" }}
-                                </td>
+                                    <td>{{ testimonial.rating }}/5</td>
 
-                                <td>
-                                    {% if testimonial.is_approved %}
-                                        <span class="admin-status-pill success">
-                                            Approved
-                                        </span>
-                                    {% else %}
-                                        <span class="admin-status-pill warning">
-                                            Pending
-                                        </span>
-                                    {% endif %}
-                                </td>
-                            </tr>
+                                    <td>
+                                        {{ testimonial.created_at|date:"d M Y" }}
+                                    </td>
+
+                                    <!-- REVIEW STATUS -->
+                                    <td>
+                                        {% if testimonial.status == "pending" %}
+                                            <span class="admin-status-pill warning">
+                                                Awaiting Review
+                                            </span>
+
+                                        {% elif testimonial.status == "under_review" %}
+                                            <span class="admin-status-pill warning">
+                                                Under Review
+                                            </span>
+
+                                        {% elif testimonial.status == "approved" and testimonial.is_approved %}
+                                            <span class="admin-status-pill success">
+                                                Approved
+                                            </span>
+
+                                        {% elif testimonial.status == "approved" and not testimonial.is_approved %}
+                                            <span class="admin-status-pill muted">
+                                                Kept Private
+                                            </span>
+                                        {% endif %}
+                                    </td>
+
+                                    <!-- FEEDBACK ACTIONS -->
+                                    <td>
+
+
+
+
+
+
+<div class="admin-feedback-actions">
+
+    <!-- Primary actions: displayed side by side -->
+    <div class="admin-primary-actions">
+
+        <form method="post"
+              action="{% url 'testimonial_action' testimonial.id 'review' %}">
+            {% csrf_token %}
+            <button type="submit"
+                    class="feedback-action-btn action-review"
+                    {% if testimonial.status == "under_review" or testimonial.status == "approved" %}disabled{% endif %}>
+                Review
+            </button>
+        </form>
+
+        <form method="post"
+              action="{% url 'testimonial_action' testimonial.id 'approve' %}">
+            {% csrf_token %}
+            <button type="submit"
+                    class="feedback-action-btn action-approve{% if testimonial.status == 'approved' and testimonial.is_approved %} is-selected{% endif %}"
+                    {% if testimonial.status == "approved" %}disabled{% endif %}>
+                {% if testimonial.status == "approved" and testimonial.is_approved %}
+                    Approved ✓
+                {% else %}
+                    Approve
+                {% endif %}
+            </button>
+        </form>
+
+        <form method="post"
+              action="{% url 'testimonial_action' testimonial.id 'reject' %}">
+            {% csrf_token %}
+            <button type="submit"
+                    class="feedback-action-btn action-private{% if testimonial.status == 'approved' and not testimonial.is_approved %} is-selected{% endif %}"
+                    {% if testimonial.status == "approved" %}disabled{% endif %}>
+                {% if testimonial.status == "approved" and not testimonial.is_approved %}
+                    Kept Private ✓
+                {% else %}
+                    Keep Private
+                {% endif %}
+            </button>
+        </form>
+
+    </div>
+
+    <!-- Undo action: separate row -->
+    {% if testimonial.status == "approved" %}
+        <button type="button"
+                class="feedback-action-btn action-undo"
+                data-undo-toggle="{{ testimonial.id }}"
+                aria-expanded="false"
+                aria-controls="undo-form-{{ testimonial.id }}">
+            <span aria-hidden="true">↶</span>
+            Undo Decision
+        </button>
+
+        <!-- Hidden until Undo Decision is clicked -->
+        <form method="post"
+              action="{% url 'testimonial_action' testimonial.id 'undo' %}"
+              id="undo-form-{{ testimonial.id }}"
+              class="admin-undo-form"
+              data-undo-form="{{ testimonial.id }}"
+              hidden>
+
+            {% csrf_token %}
+
+            <label for="undo-reason-{{ testimonial.id }}">
+                Reason for undoing
+            </label>
+
+            <textarea id="undo-reason-{{ testimonial.id }}"
+                      name="reason"
+                      rows="3"
+                      required
+                      placeholder="E.g. The wrong button was clicked by mistake."></textarea>
+
+            <div class="admin-undo-form-actions">
+                <button type="submit"
+                        class="feedback-action-btn action-undo">
+                    Confirm Undo
+                </button>
+
+                <button type="button"
+                        class="feedback-action-btn action-cancel"
+                        data-undo-cancel="{{ testimonial.id }}">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    {% endif %}
+
+</div>
+
+
+
+
+
+                                            
+                                    </td>
+
+                                </tr>
 
                             {% empty %}
-                            <tr>
-                                <td colspan="5" class="admin-empty-cell">
-                                    No testimonials have been submitted.
-                                </td>
-                            </tr>
+                                <tr>
+                                    <td colspan="6" class="admin-empty-cell">
+                                        No feedback or testimonials have been submitted.
+                                    </td>
+                                </tr>
                             {% endfor %}
                         </tbody>
+
                     </table>
                 </div>
 
                 <p class="admin-footnote">
-                    Approval and rejection controls will be added as
-                    secure POST actions in a later step.
+                    Review submissions using the action buttons.
+                    Only testimonials approved for publication appear on the public website.
+                    Final decisions can be reversed by a system administrator with a recorded reason.
                 </p>
-            </section>
 
+            </section>
         </section>
 
         <!-- SYSTEM ACTIVITIES -->
-        <section class="admin-panel"
-                 data-admin-panel="activity"
-                 hidden>
+        <section class="admin-panel" data-admin-panel="activity" hidden>
 
             <div class="admin-panel-heading">
                 <p class="admin-eyebrow">SYSTEM OVERSIGHT</p>
                 <h1>System activities</h1>
-                <p>
-                    Monitor important administrative and platform events.
-                </p>
+                <p>Monitor important administrative and platform events.</p>
             </div>
 
             <div class="admin-empty-feature">
@@ -652,7 +689,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
         panels.forEach(function (panel) {
             const active = panel.dataset.adminPanel === name;
-
             panel.hidden = !active;
             panel.classList.toggle("active-admin-panel", active);
         });
@@ -661,6 +697,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const active = button.dataset.adminTab === name;
 
             button.classList.toggle("active", active);
+
             button.setAttribute(
                 "aria-selected",
                 active ? "true" : "false"
@@ -688,6 +725,109 @@ document.addEventListener("DOMContentLoaded", function () {
     );
 
     showAdminPanel("overview");
+
+    document.querySelectorAll(".admin-toast").forEach(function (toast) {
+
+        const closeButton = toast.querySelector(".admin-toast-close");
+        let dismissed = false;
+
+        function dismissToast() {
+            if (dismissed) return;
+
+            dismissed = true;
+            toast.style.transition = "opacity 0.25s ease";
+            toast.style.opacity = "0";
+
+            window.setTimeout(function () {
+                toast.remove();
+            }, 250);
+        }
+
+        if (closeButton) {
+            closeButton.addEventListener("click", dismissToast);
+        }
+
+        window.setTimeout(dismissToast, 5000);
+    });
+
+
+    
+
+    // Expand or collapse the undo-decision form.
+    document.querySelectorAll("[data-undo-toggle]").forEach(function (button) {
+        button.addEventListener("click", function () {
+            const id = button.dataset.undoToggle;
+            const form = document.querySelector(
+                '[data-undo-form="' + id + '"]'
+            );
+
+            if (!form) return;
+
+            const willOpen = form.hidden;
+
+            form.hidden = !willOpen;
+            button.setAttribute("aria-expanded", String(willOpen));
+
+            if (willOpen) {
+                const reasonField = form.querySelector(
+                    'textarea[name="reason"]'
+                );
+
+                if (reasonField) {
+                    reasonField.focus();
+                }
+            }
+        });
+    });
+
+    // Close the undo form without submitting.
+    document.querySelectorAll("[data-undo-cancel]").forEach(function (button) {
+        button.addEventListener("click", function () {
+            const id = button.dataset.undoCancel;
+            const form = document.querySelector(
+                '[data-undo-form="' + id + '"]'
+            );
+            const toggleButton = document.querySelector(
+                '[data-undo-toggle="' + id + '"]'
+            );
+
+            if (form) {
+                form.hidden = true;
+            }
+
+            if (toggleButton) {
+                toggleButton.setAttribute("aria-expanded", "false");
+                toggleButton.focus();
+            }
+        });
+    });
+
+    // Confirm before submitting the undo request.
+    document.querySelectorAll(".admin-undo-form").forEach(function (form) {
+        form.addEventListener("submit", function (event) {
+            const reasonField = form.querySelector(
+                'textarea[name="reason"]'
+            );
+
+            if (!reasonField || !reasonField.value.trim()) {
+                event.preventDefault();
+
+                if (reasonField) {
+                    reasonField.value = reasonField.value.trim();
+                    reasonField.focus();
+                }
+
+                return;
+            }
+
+            if (!confirm(
+                "Undo this final decision and return the feedback to Under Review?"
+            )) {
+                event.preventDefault();
+            }
+        });
+    });
+
 });
 </script>
 

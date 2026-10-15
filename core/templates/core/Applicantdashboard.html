@@ -5,10 +5,116 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'core/css/applicant-dashboard.css' %}">
+<style>
+.toast-container {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 9999;
+    width: min(420px, calc(100% - 32px));
+}
+
+.toast-message {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    border: 1px solid #bbf7d0;
+    border-radius: 12px;
+    background: #f0fdf4;
+    color: #166534;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    animation: toast-appear 0.25s ease-out;
+}
+
+.toast-icon {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #dcfce7;
+    font-weight: 700;
+}
+
+.toast-text {
+    flex: 1;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.toast-close {
+    border: none;
+    background: transparent;
+    color: inherit;
+    font-size: 23px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.toast-message.error {
+    background: #fef2f2;
+    border-color: #fecaca;
+    color: #991b1b;
+}
+
+.toast-message.warning {
+    background: #fffbeb;
+    border-color: #fde68a;
+    color: #92400e;
+}
+
+.toast-message.info {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    color: #1d4ed8;
+}
+
+@keyframes toast-appear {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 600px) {
+    .toast-container {
+        top: 12px;
+        right: 12px;
+        width: calc(100% - 24px);
+    }
+}
+</style>
 {% endblock %}
 
 {% block content %}
 <div class="app-dashboard">
+{% if messages %}
+    <div class="toast-container" aria-live="polite" aria-atomic="true">
+        {% for message in messages %}
+            <div class="toast-message {{ message.tags }}" role="alert">
+                <span class="toast-icon" aria-hidden="true">
+                    {% if message.tags == "success" %}✓{% else %}i{% endif %}
+                </span>
+
+                <span class="toast-text">{{ message }}</span>
+
+                <button type="button"
+                        class="toast-close"
+                        aria-label="Dismiss notification">
+                    &times;
+                </button>
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
     <!-- SIDEBAR -->
     <aside class="app-sidebar" aria-label="Applicant dashboard navigation">
         <div class="sidebar-profile">
@@ -22,23 +128,28 @@
         </div>
 
         <p class="sidebar-label">WORKSPACE</p>
+
         <nav class="dashboard-nav" aria-label="Dashboard sections">
             <button type="button" class="dashboard-nav-link active"
                     data-tab="overview" aria-selected="true">
                 <span class="nav-symbol">▦</span> Overview
             </button>
+
             <button type="button" class="dashboard-nav-link"
                     data-tab="assess-job" aria-selected="false">
                 <span class="nav-symbol">⌕</span> Assess a Job
             </button>
+
             <button type="button" class="dashboard-nav-link"
                     data-tab="analysis-history" aria-selected="false">
                 <span class="nav-symbol">◷</span> Analysis History
             </button>
+
             <button type="button" class="dashboard-nav-link"
                     data-tab="reports" aria-selected="false">
                 <span class="nav-symbol">⚑</span> Suspicious Job Reports
             </button>
+
             <button type="button" class="dashboard-nav-link"
                     data-tab="feedback" aria-selected="false">
                 <span class="nav-symbol">✉</span> System Feedback
@@ -66,7 +177,8 @@
 
     <!-- MAIN CONTENT -->
     <main class="app-main">
-        <!-- OVERVIEW: DEFAULT LANDING SCREEN -->
+
+        <!-- OVERVIEW -->
         <section class="dashboard-panel active-panel" data-panel="overview">
             <section class="dashboard-welcome">
                 <div>
@@ -78,6 +190,7 @@
                         Your overview of job assessments, risk alerts, reports and feedback.
                     </p>
                 </div>
+
                 <button class="primary-action" type="button" data-open-tab="assess-job">
                     <span aria-hidden="true">＋</span> Assess a Job
                 </button>
@@ -138,7 +251,7 @@
                 </article>
             </section>
 
-            <!-- QUICK ACCESS: ONLY THE TWO MOST IMPORTANT ACTIONS -->
+            <!-- QUICK ACCESS -->
             <section class="dashboard-section">
                 <div class="section-heading">
                     <div>
@@ -216,6 +329,7 @@
 
                     <form class="dashboard-form" id="job-assessment-form" method="post">
                         {% csrf_token %}
+
                         <label for="job-title">Job title <span>*</span></label>
                         <input id="job-title" name="title" type="text"
                                placeholder="e.g. Graduate Trainee" required>
@@ -256,7 +370,8 @@
                 </div>
             </div>
         </section>
-                <!-- ANALYSIS HISTORY -->
+
+        <!-- ANALYSIS HISTORY -->
         <section class="dashboard-panel" data-panel="analysis-history" hidden>
             <div class="panel-welcome">
                 <p class="eyebrow">YOUR ACTIVITY</p>
@@ -292,7 +407,7 @@
             </div>
         </section>
 
-        <!-- SUSPICIOUS JOB REPORTS: FORM + SUBMITTED REPORTS -->
+        <!-- SUSPICIOUS JOB REPORTS -->
         <section class="dashboard-panel" data-panel="reports" hidden>
             <div class="panel-welcome">
                 <p class="eyebrow">COMMUNITY SAFETY</p>
@@ -382,14 +497,24 @@
 
                     <div class="status-guide">
                         <strong>Report status guide</strong>
-                        <p><span class="status-dot pending-dot"></span><b>Pending</b> — received and awaiting review.</p>
-                        <p><span class="status-dot review-dot"></span><b>Under review</b> — being checked by an administrator.</p>
-                        <p><span class="status-dot resolved-dot"></span><b>Resolved</b> — review completed.</p>
+                        <p>
+                            <span class="status-dot pending-dot"></span>
+                            <b>Pending</b> — the report has been received.
+                        </p>
+                        <p>
+                            <span class="status-dot review-dot"></span>
+                            <b>Under Review</b> — the report is being examined.
+                        </p>
+                        <p>
+                            <span class="status-dot resolved-dot"></span>
+                            <b>Resolved</b> — the report review has been completed.
+                        </p>
                     </div>
                 </section>
             </div>
         </section>
-                <!-- SYSTEM FEEDBACK: FORM + FEEDBACK HISTORY -->
+
+        <!-- SYSTEM FEEDBACK -->
         <section class="dashboard-panel" data-panel="feedback" hidden>
             <div class="panel-welcome">
                 <p class="eyebrow">HELP US IMPROVE</p>
@@ -401,6 +526,7 @@
             </div>
 
             <div class="two-column-layout">
+                <!-- FEEDBACK FORM -->
                 <section class="content-card">
                     <div class="content-card-heading">
                         <div class="heading-icon teal">✉</div>
@@ -442,19 +568,18 @@
                         <div class="form-notice">
                             <span>i</span>
                             <p>
-                                Do not include passwords, banking details or other
-                                sensitive personal information in your feedback.
-                                Saving feedback will be enabled in the backend stage.
+                                Your feedback will be saved to your account.
+                                You can check its review status in My Feedback Submissions.
                             </p>
                         </div>
 
-                        <button class="primary-action form-action"
-                                type="button" disabled>
-                            Feedback submission not connected yet
+                        <button class="primary-action form-action" type="submit">
+                            Submit Feedback
                         </button>
                     </form>
                 </section>
 
+                <!-- FEEDBACK HISTORY -->
                 <section class="content-card submitted-records">
                     <div class="content-card-heading">
                         <div class="heading-icon blue">▤</div>
@@ -464,28 +589,97 @@
                         </div>
                     </div>
 
-                    <div class="empty-state">
-                        <div class="empty-state-icon feedback-empty-icon">✉</div>
-                        <h3>No feedback submitted yet</h3>
-                        <p>
-                            Your feedback history will display the category, rating,
-                            submission date and review status for each submission.
-                        </p>
-                    </div>
+                    {% for feedback in feedback_submissions %}
+                        <article class="feedback-submission-card">
+                          <div class="feedback-submission-header">
+    <h3>{{ feedback.get_category_display }}</h3>
 
+    {% if feedback.status == "pending" %}
+        <span class="feedback-status pending">
+            Awaiting Review
+        </span>
+
+    {% elif feedback.status == "under_review" %}
+        <span class="feedback-status under-review">
+            Under Review
+        </span>
+
+    {% elif feedback.status == "approved" and feedback.is_approved %}
+        <span class="feedback-status approved">
+            Approved
+        </span>
+
+    {% elif feedback.status == "approved" and not feedback.is_approved %}
+        <span class="feedback-status private">
+            Kept Private
+        </span>
+    {% endif %}
+</div>
+
+                            <p>{{ feedback.feedback }}</p>
+
+                            <div class="feedback-submission-meta">
+                                <span>Rating: {{ feedback.rating }}/5</span>
+                                <span>
+                                    Submitted {{ feedback.created_at|date:"d M Y" }}
+                                </span>
+                            </div>
+                        </article>
+                    {% empty %}
+                        <div class="empty-state">
+                            <div class="empty-state-icon feedback-empty-icon">✉</div>
+                            <h3>No feedback submitted yet</h3>
+                            <p>
+                                Once you submit feedback, it will appear here with
+                                its current review status.
+                            </p>
+                        </div>
+                    {% endfor %}
+
+                    <!-- APPLICANT-FACING STATUS GUIDE -->
                     <div class="status-guide">
                         <strong>Feedback status guide</strong>
-                        <p><span class="status-dot pending-dot"></span><b>Pending</b> — waiting for review.</p>
-                        <p><span class="status-dot review-dot"></span><b>Reviewed</b> — administrator has reviewed it.</p>
+                        <p>
+                            <span class="status-dot pending-dot"></span>
+                            <b>Awaiting Review</b> — your feedback has been received.
+                        </p>
+                        <p>
+                            <span class="status-dot review-dot"></span>
+                            <b>Under Review</b> — your feedback is being examined.
+                        </p>
+                        <p>
+                            <span class="status-dot resolved-dot"></span>
+                            <b>Approved</b> — the review process has been completed.
+                        </p>
                     </div>
                 </section>
             </div>
         </section>
+
     </main>
 </div>
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+document.querySelectorAll(".toast-message").forEach(function (toast) {
+    const closeButton = toast.querySelector(".toast-close");
+
+    function dismissToast() {
+        toast.style.transition = "opacity 0.25s ease";
+        toast.style.opacity = "0";
+
+        window.setTimeout(function () {
+            toast.remove();
+        }, 250);
+    }
+
+    if (closeButton) {
+        closeButton.addEventListener("click", dismissToast);
+    }
+
+    window.setTimeout(dismissToast, 5000);
+});
+
     const tabButtons = document.querySelectorAll(".dashboard-nav-link[data-tab]");
     const panels = document.querySelectorAll(".dashboard-panel[data-panel]");
 
