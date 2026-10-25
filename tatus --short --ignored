@@ -1,0 +1,7 @@
+[33m2bd873b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Merge branch 'main' of https://github.com/Clarita254/AjiraSafe
+[33m463a506[m Implemented User feedback end to end logic
+[33m1f2e614[m Add AjiraSafe ML pipeline notebook
+[33mf1f33e7[m Created the Applicant, Admin dashboard and added Ajira logo
+[33mc484982[m Added Sign Up and Sign In functionality
+[33m3256cc9[m Created the signup,login, home , about us and testimonial pages
+[33md999b44[m Initial Django project setup with PostgreSQL

@@ -1,0 +1,13 @@
+[
+    "location",
+    "department",
+    "salary_range",
+    "telecommuting",
+    "has_company_logo",
+    "has_questions",
+    "employment_type",
+    "required_experience",
+    "required_education",
+    "industry",
+    "function"
+]

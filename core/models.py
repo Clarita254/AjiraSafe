@@ -47,7 +47,15 @@ class Employer(models.Model):
     employer_id = models.AutoField(primary_key=True)
 
     company_name = models.CharField(max_length=255)
-    email_domain = models.CharField(max_length=150, unique=True)
+    
+    email_domain = models.CharField(
+    max_length=150,
+    unique=True,
+    blank=True,
+    null=True,
+    default=None,
+)
+
 
     website = models.URLField(max_length=255, blank=True)
     company_reg_number = models.CharField(max_length=255, blank=True)

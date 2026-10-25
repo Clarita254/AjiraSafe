@@ -12,7 +12,7 @@ from django.core.exceptions import ValidationError
 
 from django.contrib.auth.decorators import login_required
 
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, request
 
 from django.urls import reverse
 from django.db import transaction
@@ -20,7 +20,6 @@ from django.utils import timezone
 from django.views.csrf import csrf_failure as django_csrf_failure
 
 from django.views.decorators.cache import never_cache
-
 
 from core.models import TestimonialDecisionLog
 from .models import (
@@ -42,7 +41,14 @@ from django.shortcuts import get_object_or_404
 from django.views.decorators.http import require_POST
 
 import re
-
+import json
+from decimal import Decimal
+from urllib.parse import urlparse
+from .ml_service import (
+    assess_job,
+    explain_job_lime,
+    explain_job_tabular_lime,
+)
 
 # =========================================================
 # HOME
@@ -931,65 +937,40 @@ def forgot_password(request):
 @login_required(login_url="login")
 @never_cache
 def dashboard(request):
-    # Only Job Applicants may access this dashboard.
-    if not request.user.groups.filter(
-        name="Job Applicant"
-    ).exists():
-        if request.user.groups.filter(
-            name="System Administrator"
-        ).exists():
+    # Redirect users who are not job applicants.
+    if not request.user.groups.filter(name="Job Applicant").exists():
+        if request.user.groups.filter(name="System Administrator").exists():
             return redirect("admin_dashboard")
-
         return redirect("home")
 
-    # Retrieve the applicant's profile.
+    # Retrieve the applicant profile.
     try:
         applicant = request.user.job_applicant
     except JobApplicant.DoesNotExist:
-        messages.error(
-            request,
-            "Your applicant profile could not be found."
-        )
+        messages.error(request, "Your applicant profile could not be found.")
         return redirect("home")
 
-    # Process the applicant's feedback submission.
+    # Handle applicant feedback submissions.
     if request.method == "POST" and "feedback_type" in request.POST:
-        category = request.POST.get(
-            "feedback_type", ""
-        ).strip()
-
-        feedback_text = request.POST.get(
-            "feedback", ""
-        ).strip()
-
-        rating_value = request.POST.get(
-            "rating", ""
-        ).strip()
+        category = request.POST.get("feedback_type", "").strip()
+        feedback_text = request.POST.get("feedback", "").strip()
+        rating_value = request.POST.get("rating", "").strip()
 
         valid_categories = [
-            choice[0]
-            for choice in Testimonial.Category.choices
+            choice[0] for choice in Testimonial.Category.choices
         ]
 
         if category not in valid_categories:
-            messages.error(
-                request,
-                "Please select a valid feedback category."
-            )
-
+            messages.error(request, "Please select a valid feedback category.")
         elif not feedback_text:
-            messages.error(
-                request,
-                "Please enter your feedback."
-            )
-
+            messages.error(request, "Please enter your feedback.")
         else:
             try:
                 rating = int(rating_value)
             except (TypeError, ValueError):
                 rating = 0
 
-            if rating < 1 or rating > 5:
+            if not 1 <= rating <= 5:
                 messages.error(
                     request,
                     "Please select a rating between 1 and 5."
@@ -1009,15 +990,343 @@ def dashboard(request):
                     "Your feedback has been submitted successfully. "
                     "You can track its status in My Feedback Submissions."
                 )
-
                 return redirect("dashboard")
 
-    # Show only feedback submitted by the logged-in applicant.
-    feedback_submissions = Testimonial.objects.filter(
-        user=request.user
-    ).order_by("-created_at")
+    # Display the latest assessment result only on the Assess Job tab.
+    active_tab = request.GET.get("tab", "overview")
+    assessment_result = None
 
-    # Dashboard summary information.
+    if active_tab == "assess-job":
+        assessment_result = request.session.pop(
+            "latest_assessment_result", None
+        )
+
+    # Handle job assessment submissions.
+    if request.method == "POST" and "assessment_submit" in request.POST:
+        title = request.POST.get("title", "").strip()
+        company_name = request.POST.get("company_name", "").strip()
+        location = request.POST.get("location", "").strip()
+        job_url = request.POST.get("job_url", "").strip()
+        description = request.POST.get("description", "").strip()
+
+        if not title or not company_name or not description:
+            messages.error(
+                request,
+                "Please provide the job title, employer name, "
+                "and job description."
+            )
+        else:
+            try:
+                # Validate the supplied job URL.
+                website = ""
+
+                if job_url:
+                    parsed_url = urlparse(job_url)
+
+                    if (
+                        parsed_url.scheme not in ("http", "https")
+                        or not parsed_url.hostname
+                    ):
+                        raise ValueError(
+                            "Please enter a valid job URL."
+                        )
+
+                    website = job_url
+
+                # Prepare the job data for the machine-learning model.
+                job_data = {
+                    "title": title,
+                    "description": description,
+                    "location": location,
+                    "company_profile": "",
+                    "requirements": "",
+                    "benefits": "",
+                    "department": "",
+                    "salary_range": "",
+                    "telecommuting": False,
+                    "has_company_logo": False,
+                    "has_questions": False,
+                    "employment_type": "",
+                    "required_experience": "",
+                    "required_education": "",
+                    "industry": "",
+                    "function": "",
+                }
+
+                # Run the job risk assessment.
+                prediction_data = assess_job(job_data)
+
+                # Generate explanations. Explanation failures should not
+                # prevent the main assessment from being saved.
+                import logging
+
+                logger = logging.getLogger(__name__)
+
+                text_lime_data = None
+                structured_lime_data = None
+
+                try:
+                    text_lime_data = explain_job_lime(
+                        job_data,
+                        num_features=8,
+                        num_samples=500,
+                    )
+                except Exception:
+                    logger.exception(
+                        "LIME text explanation failed."
+                    )
+
+                try:
+                    structured_lime_data = explain_job_tabular_lime(
+                        job_data,
+                        num_features=11,
+                        num_samples=1000,
+                    )
+                except Exception:
+                    logger.exception(
+                        "LIME structured explanation failed."
+                    )
+
+                # Extract and format the model results.
+                probability = Decimal(
+                    str(prediction_data["fraud_probability"])
+                ).quantize(Decimal("0.0001"))
+
+                risk_score = Decimal(
+                    str(prediction_data["risk_score"])
+                ).quantize(Decimal("0.01"))
+
+                prediction = prediction_data["prediction"]
+                risk_level = prediction_data["risk_level"]
+
+                fraud_probability_percent = float(probability) * 100
+
+                if prediction == "fraudulent":
+                    explanation_text = (
+                        "The Random Forest model classified this job "
+                        "advertisement as fraudulent and estimated a fraud "
+                        f"probability of {fraud_probability_percent:.2f}%. "
+                        "AjiraSafe's risk calculation places it in the "
+                        f"{str(risk_level).lower()} risk category. "
+                        "This is a model-based assessment, not independent "
+                        "proof of fraud. Employer verification is a "
+                        "separate check."
+                    )
+                else:
+                    explanation_text = (
+                        "The Random Forest model classified this job "
+                        "advertisement as legitimate and estimated a fraud "
+                        f"probability of {fraud_probability_percent:.2f}%. "
+                        "AjiraSafe's risk calculation places it in the "
+                        f"{str(risk_level).lower()} risk category. "
+                        "This classification does not confirm that the "
+                        "employer is genuine; employer verification is "
+                        "separate."
+                    )
+
+                explanation_payload = {
+                    "text_lime": text_lime_data,
+                    "structured_lime": structured_lime_data,
+                }
+
+                available_methods = []
+
+                if text_lime_data is not None:
+                    available_methods.append("LIME text")
+
+                if structured_lime_data is not None:
+                    available_methods.append("LIME structured features")
+
+                explanation_method = (
+                    " + ".join(available_methods)
+                    if available_methods
+                    else "Model prediction with descriptive indicators"
+                )
+
+                # Save the assessment and its related records together.
+                with transaction.atomic():
+                    employer = Employer.objects.filter(
+                        company_name__iexact=company_name,
+                        website=website,
+                    ).first()
+
+                    if employer is None:
+                        employer = Employer.objects.create(
+                            company_name=company_name,
+                            website=website,
+                            email_domain=None,
+                        )
+
+                    job_status = (
+                        JobAdvertisement.Status.FLAGGED
+                        if prediction == "fraudulent"
+                        else JobAdvertisement.Status.ANALYZED
+                    )
+
+                    job = JobAdvertisement.objects.create(
+                        applicant=applicant,
+                        employer=employer,
+                        title=title,
+                        description=description,
+                        location=location,
+                        department="",
+                        salary_range="",
+                        company_profile="",
+                        requirements="",
+                        benefits="",
+                        telecommuting=False,
+                        has_company_logo=False,
+                        has_questions=False,
+                        employment_type="",
+                        required_experience="",
+                        required_education="",
+                        industry="",
+                        function="",
+                        status=job_status,
+                    )
+
+                    ml_model = MLModel.objects.get(
+                        model_name="AjiraSafe Random Forest",
+                        model_version="1.0.0",
+                    )
+
+                    combined_text = " ".join(
+                        str(job_data.get(field, "") or "")
+                        for field in (
+                            "title",
+                            "company_profile",
+                            "description",
+                            "requirements",
+                            "benefits",
+                        )
+                    ).strip()
+
+                    result = AnalysisResult.objects.create(
+                        job=job,
+                        model=ml_model,
+                        prediction=prediction,
+                        prediction_probability=probability,
+                        processed_text_length=len(combined_text),
+                    )
+
+                    RiskAssessment.objects.create(
+                        result=result,
+                        risk_score=risk_score,
+                        risk_level=risk_level,
+                    )
+
+                    Explanation.objects.create(
+                        result=result,
+                        explanation_text=explanation_text,
+                        key_contribution_features=json.dumps(
+                            explanation_payload
+                        ),
+                        method=explanation_method,
+                    )
+
+                    # Store the result for the Assess Job tab.
+                    assessment_result = {
+                        "job_id": job.job_id,
+                        "title": title,
+                        "company_name": company_name,
+                        "prediction": prediction,
+                        "fraud_probability": fraud_probability_percent,
+                        "risk_score": float(risk_score),
+                        "risk_level": risk_level,
+                        "employer_verification": "Not verified",
+                        "explanation": explanation_text,
+                        "text_lime_features": (
+                            text_lime_data.get("features", [])
+                            if text_lime_data
+                            else []
+                        ),
+                        "structured_lime_features": (
+                            structured_lime_data.get("features", [])
+                            if structured_lime_data
+                            else []
+                        ),
+                        "lime_available": (
+                            text_lime_data is not None
+                            or structured_lime_data is not None
+                        ),
+                    }
+
+                # Redirect to Assess Job after a successful assessment.
+                request.session["latest_assessment_result"] = (
+                    assessment_result
+                )
+                request.session.modified = True
+
+                messages.success(
+                    request,
+                    "Job assessment completed and saved successfully."
+                )
+
+                return redirect(
+                    f"{reverse('dashboard')}?tab=assess-job"
+                )
+
+            except MLModel.DoesNotExist:
+                messages.error(
+                    request,
+                    "The registered AjiraSafe model version was not "
+                    "found. Please check the MLModel record."
+                )
+
+            except ValueError as exc:
+                messages.error(request, str(exc))
+
+            except Exception:
+                logging.getLogger(__name__).exception(
+                    "Job assessment failed."
+                )
+                messages.error(
+                    request,
+                    "The assessment could not be completed. Please try "
+                    "again. If the problem continues, check the "
+                    "application logs."
+                )
+
+    # Load feedback submissions and assessment history.
+    feedback_submissions = (
+        Testimonial.objects
+        .filter(user=request.user)
+        .order_by("-created_at")
+    )
+
+    analysis_history = (
+        AnalysisResult.objects
+        .filter(job__applicant=applicant)
+        .select_related("job", "model")
+        .order_by("-pk")
+    )
+
+    history_rows = []
+
+    for analysis in analysis_history:
+        risk_assessment = (
+            RiskAssessment.objects
+            .filter(result=analysis)
+            .first()
+        )
+
+        history_rows.append({
+            "id": analysis.pk,
+            "title": analysis.job.title,
+            "prediction": analysis.prediction,
+            "risk_score": (
+                risk_assessment.risk_score
+                if risk_assessment
+                else None
+            ),
+            "risk_level": (
+                risk_assessment.risk_level
+                if risk_assessment
+                else "Unavailable"
+            ),
+        })
+
+    # Calculate dashboard summary cards from saved database records.
     jobs_analyzed = AnalysisResult.objects.filter(
         job__applicant=applicant
     ).count()
@@ -1039,11 +1348,15 @@ def dashboard(request):
     ).count()
 
     context = {
+        "active_tab": active_tab,
         "jobs_analyzed": jobs_analyzed,
         "high_risk_count": high_risk_count,
         "reports_count": reports_count,
         "pending_feedback_count": pending_feedback_count,
         "feedback_submissions": feedback_submissions,
+        "assessment_result": assessment_result,
+        "analysis_history": history_rows,
+        
     }
 
     return render(
