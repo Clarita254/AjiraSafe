@@ -291,6 +291,394 @@
     }
 }
 
+
+/* =========================================
+   AJIRASAFE — ASSESSMENT HISTORY
+   Consolidated styles — no duplicate rules
+   ========================================= */
+
+.assessment-history {
+    width: 100%;
+    min-width: 0;
+    margin: 24px auto 0;
+    box-sizing: border-box;
+}
+
+.history-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 22px;
+}
+
+.history-eyebrow {
+    color: #078b83;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1.6px;
+}
+
+.history-header h2 {
+    margin: 6px 0;
+    color: #142b49;
+    font-size: 23px;
+    font-weight: 800;
+}
+
+.history-header p {
+    margin: 0;
+    color: #687b91;
+    font-size: 13px;
+    line-height: 1.65;
+}
+
+.history-count {
+    flex-shrink: 0;
+    padding: 8px 12px;
+    border-radius: 20px;
+    background: #e6f5f3;
+    color: #087e76;
+    font-size: 11px;
+    font-weight: 800;
+}
+
+/* Responsive summary-card grid */
+.history-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 18px;
+    width: 100%;
+}
+
+.history-card {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding: 21px;
+    overflow: hidden;
+    box-sizing: border-box;
+    border: 1px solid #dbe5f1;
+    border-top: 3px solid #08a198;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 6px 22px rgba(25, 55, 88, 0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.history-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 11px 26px rgba(25, 55, 88, 0.09);
+}
+
+/* Job information */
+.history-card-header {
+    display: grid;
+    grid-template-columns: 46px minmax(0, 1fr);
+    align-items: start;
+    gap: 12px;
+}
+
+.history-job-icon {
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    border-radius: 13px;
+    background: linear-gradient(135deg, #19446c, #079b91);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.history-job-info {
+    min-width: 0;
+}
+
+.history-job-info h3 {
+    margin: 0 0 5px;
+    color: #142b49;
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+}
+
+.history-employer,
+.history-date {
+    margin: 4px 0 0;
+    color: #63778f;
+    font-size: 12px;
+    line-height: 1.55;
+    overflow-wrap: anywhere;
+}
+
+/* Prediction badges */
+.history-prediction {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    align-self: flex-start;
+
+    width: auto;
+    min-width: max-content;
+    max-width: 100%;
+    white-space: nowrap;
+    word-break: normal;
+    overflow-wrap: normal;
+
+    margin-top: 16px;
+    padding: 9px 16px;
+
+    border: 1px solid transparent;
+    border-radius: 999px;
+
+    font-size: 12px;
+    line-height: 1.4;
+    font-weight: 800;
+    box-sizing: border-box;
+    flex-shrink: 0;
+}
+
+.history-fraudulent {
+    border-color: #ffcaca;
+    background: #fff0ef;
+    color: #bd2635;
+}
+
+.history-legitimate {
+    border-color: #bde7ca;
+    background: #e9f8ee;
+    color: #187744;
+}
+
+.history-unknown {
+    background: #eef2f7;
+    color: #586a80;
+}
+
+
+/* Compact risk summary */
+.history-summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    margin-top: 18px;
+    padding: 15px;
+    border: 1px solid #e2ebf5;
+    border-radius: 12px;
+    background: #f5f8fd;
+}
+
+.history-summary-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    min-width: 0;
+}
+
+.history-summary-label {
+    color: #6b7f96;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.history-score {
+    color: #142b49;
+    font-size: 23px;
+    font-weight: 850;
+    line-height: 1.3;
+}
+
+.history-score small {
+    color: #75869a;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+/* Risk level badges: override generic dashboard styles safely */
+.history-summary-item .history-risk-level {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    max-width: 100%;
+    padding: 6px 9px;
+    border: 0;
+    border-radius: 7px;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+    box-shadow: none;
+}
+
+.history-summary-item .history-risk-level.risk-low {
+    background: #e2f6e8;
+    color: #187744;
+}
+
+.history-summary-item .history-risk-level.risk-medium {
+    background: #fff1d4;
+    color: #9a6100;
+}
+
+.history-summary-item .history-risk-level.risk-high {
+    background: #fee8e7;
+    color: #b42332;
+}
+
+.history-summary-item .history-risk-level.risk-unknown {
+    background: #edf1f6;
+    color: #586a80;
+}
+
+/* Card footer and results action */
+.history-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: auto;
+    padding-top: 17px;
+}
+
+.history-saved-note {
+    color: #657991;
+    font-size: 11px;
+}
+
+.history-saved-note span {
+    margin-right: 4px;
+    color: #079b91;
+    font-weight: 900;
+}
+
+.history-view-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 13px;
+    border: 0;
+    border-radius: 9px;
+    background: #087f77;
+    color: #fff !important;
+    font-size: 12px;
+    font-weight: 800;
+    text-decoration: none !important;
+    white-space: nowrap;
+    transition: background 0.2s ease;
+}
+
+.history-view-button:hover {
+    background: #06665f;
+}
+
+/* Empty history state */
+.history-empty {
+    padding: 35px 20px;
+    border: 1px dashed #cbd9e8;
+    border-radius: 16px;
+    background: #f8fbff;
+    text-align: center;
+}
+
+.history-empty h3 {
+    margin-top: 0;
+    color: #142b49;
+}
+
+.history-empty p {
+    max-width: 430px;
+    margin: 0 auto 18px;
+    color: #687b91;
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+/* Latest assessment banner on dashboard Overview */
+.latest-assessment-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 18px;
+    margin-top: 24px;
+    padding: 22px;
+    border: 1px solid #cfe6e3;
+    border-radius: 16px;
+    background: linear-gradient(120deg, #effaf8, #f7f9ff);
+    box-sizing: border-box;
+}
+
+.latest-assessment-link h3 {
+    margin: 8px 0;
+    color: #142b49;
+    font-size: 18px;
+}
+
+.latest-assessment-link p {
+    margin: 0;
+    color: #63748b;
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+/* Tablet */
+@media (max-width: 1050px) {
+    .history-list {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+    .history-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .history-card {
+        padding: 16px;
+    }
+
+    .history-summary {
+        gap: 10px;
+        padding: 12px;
+    }
+
+    .history-card-footer {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .history-view-button {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .latest-assessment-link {
+        padding: 17px;
+    }
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+    .history-card,
+    .history-view-button {
+        transition: none;
+    }
+
+    .history-card:hover {
+        transform: none;
+    }
+}
+
+
+
 </style>
 {% endblock %}
 
@@ -451,6 +839,37 @@
                 </article>
             </section>
 
+
+{% if latest_assessment %}
+    <div class="latest-assessment-link">
+        <div>
+            <span class="history-eyebrow">CONTINUE WHERE YOU LEFT OFF</span>
+            <h3>{{ latest_assessment.job.title }}</h3>
+            <p>
+                Your most recent saved job assessment is available to view again.
+            </p>
+        </div>
+
+        <a class="history-view-button"
+           href="{% url 'assessment_results' latest_assessment.result_id %}">
+            Reopen results <span aria-hidden="true">→</span>
+        </a>
+    </div>
+{% else %}
+    <div class="latest-assessment-link">
+        <div>
+            <h3>Ready to check a job?</h3>
+            <p>Assess a job advertisement to view its risk analysis.</p>
+        </div>
+
+        <a class="history-view-button"
+           href="{% url 'dashboard' %}?tab=assess-job">
+            Assess a job <span aria-hidden="true">→</span>
+        </a>
+    </div>
+{% endif %}
+
+
             <!-- QUICK ACCESS -->
             <section class="dashboard-section">
                 <div class="section-heading">
@@ -491,193 +910,228 @@
             </div>
         </section>
 
+       
+       
         <!-- ASSESS A JOB -->
-        <section class="dashboard-panel" data-panel="assess-job" hidden>
+        <section
+            class="dashboard-panel"
+            id="assess-job-panel"
+            data-panel="assess-job"
+            hidden
+        >
             <div class="panel-welcome">
                 <p class="eyebrow">JOB RISK ASSESSMENT</p>
                 <h1>Assess a job advertisement</h1>
                 <p>
-                    Enter the job details you want AjiraSafe to assess for potential
-                    fraud indicators and employer verification information.
+                    Provide the job details so AjiraSafe can assess the
+                    listing and show the available risk and verification
+                    information.
                 </p>
             </div>
 
             <div class="assessment-card">
                 <div class="assessment-intro">
-                    <div class="assessment-illustration">
+                    <div class="assessment-illustration" aria-hidden="true">
                         <span class="illustration-shield">✓</span>
                         <span class="illustration-case">▰</span>
                     </div>
+
                     <h2>Check before you apply</h2>
-                   
-<p>
-    The completed assessment will display the model's prediction,
-    estimated fraud probability, risk level, employer verification
-    status, and a concise explanation of the model's assessment.
-</p>
+
+                    <p>
+                        Submit a job advertisement to receive a fraud
+                        prediction, risk level, employer verification
+                        information, and an explanation of important
+                        risk signals.
+                    </p>
 
                     <ul class="assessment-points">
-                        <li><span>✓</span> Fraud prediction and probability</li>
-                        <li><span>✓</span> Employer verification status</li>
-                        <li><span>✓</span> LIME explanation of risk signals</li>
+                        <li>
+                            <span>✓</span>
+                            Fraud prediction and risk score
+                        </li>
+                        <li>
+                            <span>✓</span>
+                            Employer verification status
+                        </li>
+                        <li>
+                            <span>✓</span>
+                            Explanation of risk signals
+                        </li>
                     </ul>
                 </div>
 
                 <div class="assessment-form-panel">
                     <div class="form-panel-heading">
                         <h2>Job details</h2>
-                        <span class="required-note">Fields marked * are required</span>
+                        <span class="required-note">
+                            Fields marked * are required
+                        </span>
                     </div>
 
-                    <form class="dashboard-form" id="job-assessment-form" method="post">
+                    <form
+                        class="dashboard-form"
+                        id="job-assessment-form"
+                        method="post"
+                    >
                         {% csrf_token %}
-<input type="hidden" name="assessment_submit" value="1">
-                        <label for="job-title">Job title <span>*</span></label>
-                        <input id="job-title" name="title" type="text"
-                               placeholder="e.g. Graduate Trainee" required>
 
-                        <label for="company-name">Company / employer name <span>*</span></label>
-                        <input id="company-name" name="company_name" type="text"
-                               placeholder="Enter the advertised employer" required>
+                        <input
+                            type="hidden"
+                            name="assessment_submit"
+                            value="1"
+                        >
 
-                        <label for="job-location">Job location</label>
-                        <input id="job-location" name="location" type="text"
-                               placeholder="e.g. Nairobi or Remote">
+                        <label for="job-title">
+                            Job title <span>*</span>
+                        </label>
+                        <input
+                            id="job-title"
+                            name="title"
+                            type="text"
+                            placeholder="e.g. Graduate Trainee"
+                            required
+                        >
+
+                        <label for="company-name">
+                            Company / employer name <span>*</span>
+                        </label>
+                        <input
+                            id="company-name"
+                            name="company_name"
+                            type="text"
+                            placeholder="Enter the advertised employer"
+                            required
+                        >
+
+                        <label for="job-location">
+                            Job location
+                        </label>
+                        <input
+                            id="job-location"
+                            name="location"
+                            type="text"
+                            placeholder="e.g. Nairobi or Remote"
+                        >
 
                         <label for="job-url">
                             Job advertisement link
-                            <span class="optional-label">(if available)</span>
+                            <span class="optional-label">
+                                (if available)
+                            </span>
                         </label>
-                        <input id="job-url" name="job_url" type="url"
-                               placeholder="https://example.com/job-listing">
+                        <input
+                            id="job-url"
+                            name="job_url"
+                            type="url"
+                            placeholder="https://example.com/job-listing"
+                        >
 
-                        <label for="job-description">Job advertisement text <span>*</span></label>
-                        <textarea id="job-description" name="description" rows="6"
-                                  placeholder="Paste the job description, requirements, salary details and instructions from the listing..."
-                                  required></textarea>
+                       
 
+<!-- Additional structured job details -->
+
+<label for="salary-range">Salary range</label>
+<input
+    id="salary-range"
+    name="salary_range"
+    type="text"
+    placeholder="e.g. KES 30,000–50,000 per month"
+>
+
+<label for="employment-type">Employment type</label>
+<select id="employment-type" name="employment_type">
+    <option value="">Not specified</option>
+    <option value="Full-time">Full-time</option>
+    <option value="Part-time">Part-time</option>
+    <option value="Contract">Contract</option>
+    <option value="Temporary">Temporary</option>
+    <option value="Internship">Internship</option>
+    <option value="Other">Other</option>
+</select>
+
+<label for="required-experience">Required experience</label>
+<select id="required-experience" name="required_experience">
+    <option value="">Not specified</option>
+    <option value="Entry-level">Entry-level</option>
+    <option value="Internship">Internship</option>
+    <option value="1-3 years">1–3 years</option>
+    <option value="3-5 years">3–5 years</option>
+    <option value="5+ years">5+ years</option>
+    <option value="Other">Other</option>
+</select>
+
+<label for="required-education">Required education</label>
+<input
+    id="required-education"
+    name="required_education"
+    type="text"
+    placeholder="e.g. Bachelor's degree"
+>
+
+<label for="industry">Industry</label>
+<input
+    id="industry"
+    name="industry"
+    type="text"
+    placeholder="e.g. Information Technology"
+>
+
+<label for="department">
+    Department
+    <span class="optional-label">(optional)</span>
+</label>
+<input
+    id="department"
+    name="department"
+    type="text"
+    placeholder="e.g. Software Development"
+>
+
+<label for="job-function">
+    Job function
+    <span class="optional-label">(optional)</span>
+</label>
+<input
+    id="function"
+    name="function"
+    type="text"
+    placeholder="e.g. Software Engineering"
+>
+ <label for="job-description">
+                            Job advertisement text <span>*</span>
+                        </label>
+                        <textarea
+                            id="job-description"
+                            name="description"
+                            rows="6"
+                            placeholder="Paste the job description, requirements, salary details and application instructions..."
+                            required
+                        ></textarea>
                         <div class="form-notice">
-    Your job advertisement will be assessed using the AjiraSafe
-    machine learning model. Results are risk indicators and do not
-    guarantee whether an employer or job is legitimate.
-</div>
+                            <span aria-hidden="true">i</span>
+                            <p>
+                                AjiraSafe assesses job advertisements using
+                                its machine-learning model. Results are
+                                risk indicators and do not guarantee whether
+                                an employer or job is legitimate.
+                            </p>
+                        </div>
 
-                    <button class="primary-action form-action" type="submit">
-    Assess Job Risk
-</button>    
+                        <button
+                            class="primary-action form-action"
+                            type="submit"
+                        >
+                            Assess Job Risk
+                        </button>
                     </form>
                 </div>
             </div>
         </section>
+        <!-- END ASSESS A JOB -->
 
-
-    
-{% if active_tab == "assess-job" and assessment_result %}
-<section class="assessment-results" id="assessment-results">
-            <section class="assessment-results" id="assessment-results">
-                <p class="eyebrow">ASSESSMENT COMPLETE</p>
-                <h2>Job Risk Assessment Results</h2>
-                <p>Results for {{ assessment_result.title }}</p>
-
-                <div class="summary-grid">
-                    <article class="summary-card">
-                        <p class="summary-label">Prediction</p>
-                        <strong class="summary-number">
-                            {{ assessment_result.prediction|title }}
-                        </strong>
-                    </article>
-
-                    <article class="summary-card">
-                        <p class="summary-label">Fraud probability</p>
-                        <strong class="summary-number">
-                            {{ assessment_result.fraud_probability|floatformat:2 }}%
-                        </strong>
-                    </article>
-
-                    
-
-                    <article class="summary-card">
-                        <p class="summary-label">Risk level</p>
-                        <strong class="summary-number">
-                            {{ assessment_result.risk_level|title }}
-                        </strong>
-                    </article>
-                </div>
-
-                <div class="content-card">
-                    <h3>Employer verification</h3>
-                    <p>{{ assessment_result.employer_verification }}</p>
-
-                    <h3>Assessment explanation</h3>
-                    <p>{{ assessment_result.explanation }}</p>
-
-                    {% if assessment_result.lime_available %}
-                        {% if assessment_result.text_lime_features %}
-                            <h3>LIME text explanation</h3>
-                            <ul>
-                                {% for item in assessment_result.text_lime_features %}
-                                    <li>
-                                        <strong>{{ item.feature }}</strong>:
-                                        {{ item.weight|floatformat:6 }}
-                                        {% if item.weight > 0 %}
-                                            — supports the fraudulent class
-                                        {% elif item.weight < 0 %}
-                                            — supports the legitimate class
-                                        {% else %}
-                                            — no directional contribution
-                                        {% endif %}
-                                    </li>
-                                {% endfor %}
-                            </ul>
-                        {% endif %}
-
-                        {% if assessment_result.structured_lime_features %}
-                            <h3>LIME structured-feature explanation</h3>
-                            <ul>
-                                {% for item in assessment_result.structured_lime_features %}
-                                    <li>
-                                        <strong>{{ item.feature }}</strong>:
-                                        {{ item.weight|floatformat:6 }}
-                                        {% if item.weight > 0 %}
-                                            — supports the fraudulent class
-                                        {% elif item.weight < 0 %}
-                                            — supports the legitimate class
-                                        {% else %}
-                                            — no directional contribution
-                                        {% endif %}
-                                    </li>
-                                {% endfor %}
-                            </ul>
-                        {% endif %}
-                    {% endif %}
-                </div>
-
-                <div class="result-recommendation">
-                    <h3>Recommended action</h3>
-                    {% if assessment_result.prediction == "legitimate" %}
-                        <p>
-                            Verify the employer independently before sharing
-                            personal information or accepting the offer.
-                        </p>
-                    {% else %}
-                        <p>
-                            Proceed with caution. Verify the employer independently
-                            and do not pay recruitment or registration fees.
-                        </p>
-                    {% endif %}
-                </div>
-
-                <p class="assessment-disclaimer">
-                    This assessment is a screening aid, not proof that a job is
-                    genuine or fraudulent.
-                </p>
-            </section>
-            {% endif %}
-        </section>
-
-        
         <!-- ANALYSIS HISTORY -->
-        <section class="dashboard-panel" data-panel="analysis-history" hidden>
+        <section class="dashboard-panel" id="analysis-history-panel" data-panel="analysis-history" hidden>
             <div class="panel-welcome">
                 <p class="eyebrow">YOUR ACTIVITY</p>
                 <h1>Analysis history</h1>
@@ -687,64 +1141,121 @@
                 </p>
             </div>
 
-            <div class="table-card">
-                <div class="table-card-heading">
-                    <div>
-                        <h2>Previous assessments</h2>
-                        <p>Your completed job analyses will be listed here.</p>
+
+<div class="assessment-history">
+    <div class="history-header">
+        <div>
+            <span class="history-eyebrow">YOUR SAVED ANALYSES</span>
+            <h2>Previous assessments</h2>
+            <p>Revisit your past job assessments and view the complete analysis.</p>
+        </div>
+
+        <span class="history-count">
+            {{ analysis_history|length }}
+            assessment{{ analysis_history|length|pluralize }}
+        </span>
+    </div>
+
+    {% if analysis_history %}
+        <div class="history-list">
+            {% for item in analysis_history %}
+                <article class="history-card">
+
+                    <div class="history-card-header">
+                        <div class="history-job-icon" aria-hidden="true">
+                             💼
+                        </div>
+
+                        <div class="history-job-info">
+                            <h3>{{ item.title|default:"Untitled job" }}</h3>
+                            <p class="history-employer">
+                                {{ item.employer|default:"Employer not specified" }}
+                            </p>
+                            <p class="history-date">
+                                Assessed
+                                {% if item.analysis_date %}
+                                    {{ item.analysis_date|date:"d M Y, H:i" }}
+                                {% else %}
+                                    date unavailable
+                                {% endif %}
+                            </p>
+                        </div>
+
+                        <span class="history-prediction
+                            {% if item.prediction|lower == 'fraudulent' %}
+                                history-fraudulent
+                            {% elif item.prediction|lower == 'legitimate' %}
+                                history-legitimate
+                            {% else %}
+                                history-unknown
+                            {% endif %}">
+                            {{ item.prediction|default:"Unavailable"|title }}
+                        </span>
                     </div>
-                    <span class="status-pill status-neutral">History</span>
-                </div>
 
-                {% if analysis_history %}
-    <div class="assessment-history-list">
-        {% for item in analysis_history %}
-            <article class="history-item">
-                <div class="history-item-main">
-                    <h3>{{ item.title }}</h3>
+                    <div class="history-summary">
+                        <div class="history-summary-item">
+                            <span class="history-summary-label">Risk score</span>
+                            <strong class="history-score">
+                                {% if item.risk_score != None %}
+                                    {{ item.risk_score|floatformat:2 }}
+                                    <small>/100</small>
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </strong>
+                        </div>
 
-                    <p>
-                        Prediction:
-                        <strong>{{ item.prediction|title }}</strong>
-                    </p>
+                        <div class="history-summary-item">
+                            <span class="history-summary-label">Risk level</span>
+                            <strong class="history-risk-level
+                                {% if item.risk_level|lower == 'low' %}
+                                    risk-low
+                                {% elif item.risk_level|lower == 'medium' %}
+                                    risk-medium
+                                {% elif item.risk_level|lower == 'high' or item.risk_level|lower == 'very_high' %}
+                                    risk-high
+                                {% else %}
+                                    risk-unknown
+                                {% endif %}">
+                                {{ item.risk_level|default:"Unavailable"|title }}
+                            </strong>
+                        </div>
+                    </div>
 
-                    <p>
-                        Risk score:
-                        {% if item.risk_score != None %}
-                            <strong>{{ item.risk_score }}</strong>
-                        {% else %}
-                            <strong>Unavailable</strong>
-                        {% endif %}
-                    </p>
+                    <div class="history-card-footer">
+                        <span class="history-saved-note">
+                            <span aria-hidden="true">✓</span>
+                            Saved assessment
+                        </span>
 
-                    <p>
-                        Risk level:
-                        <strong>{{ item.risk_level|title }}</strong>
-                    </p>
-                </div>
-            </article>
-        {% endfor %}
-    </div>
-{% else %}
-    <div class="empty-state">
-        <div class="empty-state-icon">◷</div>
+                        <a class="history-view-button"
+                           href="{% url 'assessment_results' item.id %}">
+                            View full results
+                            <span aria-hidden="true">→</span>
+                        </a>
+                    </div>
 
-        <h3>No analysis history yet</h3>
-
-        <p>
-            Your completed job assessments will appear here.
-        </p>
-
-        <button
-            type="button"
-            class="secondary-action"
-            data-open-tab="assess-job">
-            Assess a job
-        </button>
-    </div>
-{% endif %}
-
-        </section>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="history-empty">
+            <div class="history-empty-icon" aria-hidden="true">◷</div>
+            <h3>No assessments yet</h3>
+            <p>
+                Submitted job assessments will appear here so you can
+                return to their results whenever you need them.
+            </p>
+            <button type="button"
+                    class="secondary-action"
+                    data-open-tab="assess-job">
+                Assess your first job
+            </button>
+        </div>
+    {% endif %}
+</div>
+    </section>
 
         
         <!-- SUSPICIOUS JOB REPORTS -->
@@ -999,73 +1510,96 @@
     </main>
 </div>
 
+
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-document.querySelectorAll(".toast-message").forEach(function (toast) {
-    const closeButton = toast.querySelector(".toast-close");
+    // Dismiss notification messages.
+    document.querySelectorAll(".toast-message").forEach(function (toast) {
+        const closeButton = toast.querySelector(".toast-close");
 
-    function dismissToast() {
-        toast.style.transition = "opacity 0.25s ease";
-        toast.style.opacity = "0";
+        function dismissToast() {
+            toast.style.transition = "opacity 0.25s ease";
+            toast.style.opacity = "0";
 
-        window.setTimeout(function () {
-            toast.remove();
-        }, 250);
-    }
+            window.setTimeout(function () {
+                toast.remove();
+            }, 250);
+        }
 
-    if (closeButton) {
-        closeButton.addEventListener("click", dismissToast);
-    }
+        if (closeButton) {
+            closeButton.addEventListener("click", dismissToast);
+        }
 
-    window.setTimeout(dismissToast, 5000);
-});
+        window.setTimeout(dismissToast, 5000);
+    });
 
-    const tabButtons = document.querySelectorAll(".dashboard-nav-link[data-tab]");
-    const panels = document.querySelectorAll(".dashboard-panel[data-panel]");
+    // Dashboard navigation elements.
+    const tabButtons = document.querySelectorAll(
+        ".dashboard-nav-link[data-tab]"
+    );
 
+    const panels = document.querySelectorAll(
+        ".dashboard-panel[data-panel]"
+    );
+
+    // Display the requested dashboard panel.
     function showPanel(tabName) {
         panels.forEach(function (panel) {
             const isActive = panel.dataset.panel === tabName;
+
             panel.hidden = !isActive;
             panel.classList.toggle("active-panel", isActive);
         });
 
         tabButtons.forEach(function (button) {
             const isActive = button.dataset.tab === tabName;
+
             button.classList.toggle("active", isActive);
-            button.setAttribute("aria-selected", isActive ? "true" : "false");
+            button.setAttribute(
+                "aria-selected",
+                isActive ? "true" : "false"
+            );
         });
 
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth"
+        });
     }
 
+    // Sidebar navigation.
     tabButtons.forEach(function (button) {
         button.addEventListener("click", function () {
             showPanel(button.dataset.tab);
         });
     });
 
+    // Quick-access buttons and other links that open a dashboard tab.
     document.querySelectorAll("[data-open-tab]").forEach(function (button) {
         button.addEventListener("click", function () {
             showPanel(button.dataset.openTab);
         });
     });
 
-    // The applicant always lands on Overview first.
-   const params = new URLSearchParams(window.location.search);
-const requestedTab = params.get("tab");
+    // Open the dashboard tab specified in the URL.
+    // Successful job assessments should return to ?tab=assess-job.
+    const params = new URLSearchParams(window.location.search);
+    const requestedTab = params.get("tab");
 
-const validTabs = [
-    "overview",
-    "assess-job",
-    "analysis-history",
-    "reports",
-    "feedback"
-];
+    const validTabs = [
+        "overview",
+        "assess-job",
+        "analysis-history",
+        "reports",
+        "feedback"
+    ];
 
-showPanel(
-    validTabs.includes(requestedTab) ? requestedTab : "overview"
-);
+    const initialTab = validTabs.includes(requestedTab)
+        ? requestedTab
+        : "overview";
+
+    showPanel(initialTab);
 });
 </script>
+
 {% endblock %}

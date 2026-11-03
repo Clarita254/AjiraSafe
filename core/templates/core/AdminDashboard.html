@@ -306,6 +306,57 @@
                     </table>
                 </div>
 
+<section class="admin-content-section admin-table-card">
+    <div class="admin-table-heading">
+        <div>
+            <h2>Recent job assessments</h2>
+            <p>Inspect saved predictions and their technical LIME explanations.</p>
+        </div>
+    </div>
+
+    <div class="admin-table-wrap">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Job advertisement</th>
+                    <th>Employer</th>
+                    <th>Prediction</th>
+                    <th>Assessment date</th>
+                    <th>Technical explanation</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for analysis in recent_analysis_results %}
+                <tr>
+                    <td>{{ analysis.job.title }}</td>
+                    <td>{{ analysis.job.employer.company_name }}</td>
+                    <td>
+                        {% if analysis.prediction == "fraudulent" %}
+                            <span class="admin-status-pill warning">Fraudulent</span>
+                        {% else %}
+                            <span class="admin-status-pill success">Legitimate</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ analysis.analysis_date|date:"d M Y, H:i" }}</td>
+                    <td>
+                        <a class="admin-text-button"
+                           href="{% url 'admin_lime_explanation' analysis.result_id %}">
+                            Inspect LIME →
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="admin-empty-cell">
+                        No saved job assessments are available yet.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
             </section>
         </section>
 

@@ -1,0 +1,638 @@
+
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}LIME Technical Explanation | AjiraSafe{% endblock %}
+
+{% block content %}
+
+<style>
+    .lime-admin-page {
+        max-width: 1150px;
+        margin: 35px auto;
+        padding: 0 22px 45px;
+        color: #142b49;
+    }
+
+    .lime-admin-header {
+        margin-bottom: 25px;
+        padding: 28px;
+        border: 1px solid #dce6f2;
+        border-radius: 18px;
+        background: linear-gradient(135deg, #f0f5ff, #ffffff);
+    }
+
+    .lime-admin-eyebrow {
+        color: #087e76;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 1.5px;
+    }
+
+    .lime-admin-header h1 {
+        margin: 9px 0;
+        font-size: clamp(25px, 4vw, 34px);
+        font-weight: 850;
+    }
+
+    .lime-admin-header p,
+    .lime-admin-card p {
+        color: #63748b;
+        line-height: 1.7;
+    }
+
+    .lime-admin-card {
+        margin-bottom: 22px;
+        padding: 24px;
+        border: 1px solid #dce6f2;
+        border-radius: 16px;
+        background: #fff;
+        box-shadow: 0 5px 18px rgba(20, 43, 73, .04);
+    }
+
+    .lime-admin-card h2 {
+        margin-top: 0;
+        font-size: 20px;
+    }
+
+    .lime-admin-card h3 {
+        margin-top: 22px;
+        margin-bottom: 8px;
+        color: #142b49;
+        font-size: 15px;
+    }
+
+    .lime-admin-table-wrap {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .lime-admin-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+        text-align: left;
+    }
+
+    .lime-admin-table th {
+        padding: 12px;
+        background: #f2f6fc;
+        color: #526780;
+        font-size: 11px;
+        text-transform: uppercase;
+    }
+
+    .lime-admin-table td {
+        padding: 13px 12px;
+        border-bottom: 1px solid #e8eef5;
+        overflow-wrap: anywhere;
+    }
+
+    .lime-admin-weight {
+        font-family: Consolas, monospace;
+        font-weight: 750;
+        white-space: nowrap;
+    }
+
+    .lime-admin-direction {
+        display: inline-block;
+        padding: 6px 9px;
+        border-radius: 8px;
+        font-size: 11px;
+        font-weight: 750;
+    }
+
+    .lime-admin-fraud {
+        background: #fff0ef;
+        color: #b42332;
+    }
+
+    .lime-admin-legitimate {
+        background: #e6f7ec;
+        color: #187744;
+    }
+
+    .lime-admin-neutral {
+        background: #edf2f7;
+        color: #586a80;
+    }
+
+    /* LIME diagnostics */
+
+    .lime-diagnostic-group {
+        margin-top: 20px;
+        padding: 17px;
+        border: 1px solid #e4ebf4;
+        border-radius: 12px;
+        background: #f8fafd;
+    }
+
+    .lime-diagnostic-group h3 {
+        margin-top: 0;
+    }
+
+    .lime-diagnostic-value {
+        color: #142b49;
+        font-size: 22px;
+        font-weight: 800;
+        overflow-wrap: anywhere;
+    }
+
+    .lime-diagnostic-label {
+        margin-bottom: 5px;
+        color: #63748b;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .lime-diagnostic-status {
+        display: inline-block;
+        padding: 7px 11px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 800;
+    }
+
+    .lime-diagnostic-passed {
+        background: #e6f7ec;
+        color: #187744;
+    }
+
+    .lime-diagnostic-failed {
+        background: #fff0ef;
+        color: #b42332;
+    }
+
+    .lime-diagnostic-note {
+        margin-top: 12px;
+        padding: 13px 15px;
+        border-left: 4px solid #087e76;
+        border-radius: 6px;
+        background: #f0f7f7;
+        color: #526780;
+        font-size: 13px;
+        line-height: 1.7;
+    }
+
+    .lime-admin-json {
+        max-height: 600px;
+        overflow: auto;
+        padding: 20px;
+        border-radius: 12px;
+        background: #101d30;
+        color: #d7e7f9;
+        font: 12px/1.7 Consolas, "Courier New", monospace;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+    }
+
+    .lime-admin-back {
+        display: inline-block;
+        margin-bottom: 20px;
+        color: #087e76;
+        font-weight: 750;
+        text-decoration: none;
+    }
+
+    @media (max-width: 600px) {
+        .lime-admin-page {
+            padding: 0 13px 30px;
+        }
+
+        .lime-admin-header,
+        .lime-admin-card {
+            padding: 18px;
+        }
+    }
+</style>
+
+
+<div class="lime-admin-page">
+
+    <a class="lime-admin-back"
+       href="{% url 'admin_dashboard' %}">
+        ← Back to administrator dashboard
+    </a>
+
+
+    <!-- ADMINISTRATOR HEADER -->
+
+    <header class="lime-admin-header">
+
+        <span class="lime-admin-eyebrow">
+            RESTRICTED ADMINISTRATOR VIEW
+        </span>
+
+        <h1>Technical LIME explanation</h1>
+
+        <p>
+            Review the original local explanations saved by the
+            machine-learning pipeline. These technical details
+            are not shown on the applicant results page.
+        </p>
+
+        <p>
+            <strong>Assessment ID:</strong> {{ result.result_id }}<br>
+            <strong>Job:</strong> {{ job.title }}<br>
+            <strong>Employer:</strong> {{ job.employer }}<br>
+            <strong>Prediction:</strong> {{ result.prediction|title }}<br>
+            <strong>Analyzed:</strong>
+            {{ result.analysis_date|date:"d M Y, H:i" }}
+        </p>
+
+    </header>
+
+
+    <!-- TEXT LIME EXPLANATION -->
+
+    <section class="lime-admin-card">
+
+        <h2>Text LIME — actual feature weights</h2>
+
+        <p>
+            The text explainer's weights describe the local
+            contribution toward the Fraudulent class (class 1).
+
+            Positive weights move the local explanation toward
+            the fraudulent class, while negative weights move
+            it away from that class. These weights are local
+            model contributions, not independent evidence of fraud.
+        </p>
+
+        {% if text_lime.features %}
+
+            <div class="lime-admin-table-wrap">
+
+                <table class="lime-admin-table">
+
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th>Weight</th>
+                            <th>Direction for class 1</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% for item in text_lime.features %}
+
+                        <tr>
+
+                            <td>{{ item.feature }}</td>
+
+                            <td class="lime-admin-weight">
+
+                                {% if item.weight > 0 %}+{% endif %}
+                                {{ item.weight|floatformat:6 }}
+
+                            </td>
+
+                            <td>
+
+                                {% if item.weight > 0 %}
+
+                                    <span class="lime-admin-direction lime-admin-fraud">
+                                        Toward fraudulent
+                                    </span>
+
+                                {% elif item.weight < 0 %}
+
+                                    <span class="lime-admin-direction lime-admin-legitimate">
+                                        Away from fraudulent
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="lime-admin-direction lime-admin-neutral">
+                                        Zero contribution
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            <p>
+                Samples: {{ text_lime.num_samples|default:"—" }}.
+
+                Features requested:
+                {{ text_lime.num_features|default:"—" }}.
+            </p>
+
+        {% else %}
+
+            <p>No text LIME output was saved for this assessment.</p>
+
+        {% endif %}
+
+    </section>
+
+
+    <!-- STRUCTURED LIME EXPLANATION -->
+
+    <section class="lime-admin-card">
+
+        <h2>Structured LIME — actual feature weights</h2>
+
+        <p>
+            These weights describe the structured-feature explanation
+            for the same Fraudulent class.
+
+            Positive weights move the local explanation toward
+            the fraudulent class, while negative weights move
+            it away from that class. The weights should be
+            interpreted in the context of this individual assessment.
+        </p>
+
+        {% if structured_lime.features %}
+
+            <div class="lime-admin-table-wrap">
+
+                <table class="lime-admin-table">
+
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th>Weight</th>
+                            <th>Direction for class 1</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% for item in structured_lime.features %}
+
+                        <tr>
+
+                            <td>{{ item.feature }}</td>
+
+                            <td class="lime-admin-weight">
+
+                                {% if item.weight > 0 %}+{% endif %}
+                                {{ item.weight|floatformat:6 }}
+
+                            </td>
+
+                            <td>
+
+                                {% if item.weight > 0 %}
+
+                                    <span class="lime-admin-direction lime-admin-fraud">
+                                        Toward fraudulent
+                                    </span>
+
+                                {% elif item.weight < 0 %}
+
+                                    <span class="lime-admin-direction lime-admin-legitimate">
+                                        Away from fraudulent
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="lime-admin-direction lime-admin-neutral">
+                                        Zero contribution
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            <p>
+                Samples: {{ structured_lime.num_samples|default:"—" }}.
+
+                Features requested:
+                {{ structured_lime.num_features|default:"—" }}.
+            </p>
+
+        {% else %}
+
+            <p>No structured LIME output was saved for this assessment.</p>
+
+        {% endif %}
+
+    </section>
+
+
+    <!-- STRUCTURED LIME DIAGNOSTICS -->
+
+    <section class="lime-admin-card">
+
+        <h2>Structured LIME — explanation diagnostics</h2>
+
+        <p>
+            These measurements describe the relationship between
+            the Random Forest prediction and the local LIME surrogate.
+            They are technical explanation diagnostics, not additional
+            fraud-risk scores.
+        </p>
+
+        {% if structured_lime_metrics %}
+
+            <!-- RANDOM FOREST PREDICTION -->
+
+            <div class="lime-diagnostic-group">
+
+                <h3>Random Forest prediction</h3>
+
+                <div class="lime-diagnostic-label">
+                    Random Forest fraud probability
+                </div>
+
+                <div class="lime-diagnostic-value">
+                    {{ structured_lime_metrics.model_prediction_percent|floatformat:2 }}%
+                </div>
+
+                <p>
+                    This is the calibrated Random Forest model's
+                    predicted probability for the Fraudulent class.
+                </p>
+
+            </div>
+
+
+            <!-- LIME SURROGATE OUTPUT -->
+
+            <div class="lime-diagnostic-group">
+
+                <h3>LIME surrogate output</h3>
+
+                <div class="lime-diagnostic-label">
+                    Local surrogate output (unbounded)
+                </div>
+
+                <div class="lime-diagnostic-value">
+                    {{ structured_lime_metrics.surrogate_output|floatformat:4 }}
+                </div>
+
+                <p>
+                    This value is the output of LIME's local
+                    regression surrogate. It is not a calibrated
+                    probability and may fall outside the 0–1 range.
+                    It must not be interpreted as a percentage or
+                    as the Random Forest's fraud probability.
+                </p>
+
+            </div>
+
+
+            <!-- LOCAL FIDELITY -->
+
+            <div class="lime-diagnostic-group">
+
+                <h3>Explanation quality</h3>
+
+                <div class="lime-diagnostic-label">
+                    Local fidelity (weighted R²)
+                </div>
+
+                <div class="lime-diagnostic-value">
+                    {{ structured_lime_metrics.local_fidelity|floatformat:4 }}
+                </div>
+
+                <p>
+                    Local fidelity measures how well the local
+                    LIME surrogate approximates the Random Forest's
+                    predictions within the sampled neighbourhood.
+                    A lower value indicates a weaker local
+                    approximation.
+
+                    It is not the Random Forest's classification
+                    accuracy or confidence in its fraud prediction.
+                </p>
+
+            </div>
+
+
+            <!-- INPUT CONSISTENCY CHECK -->
+
+            <div class="lime-diagnostic-group">
+
+                <h3>Input consistency check</h3>
+
+                <div class="lime-diagnostic-label">
+                    Random Forest probability from LIME's original input
+                </div>
+
+                <div class="lime-diagnostic-value">
+                    {{ structured_lime_metrics.lime_input_prediction_percent|floatformat:2 }}%
+                </div>
+
+                <p>
+                    This check compares the original Random Forest
+                    prediction with the prediction obtained after
+                    passing the original structured input through
+                    LIME's encoding, decoding and preprocessing path.
+                </p>
+
+                <div class="lime-diagnostic-label">
+                    Consistency check result
+                </div>
+
+                {% if structured_lime_metrics.input_prediction_matches_model %}
+
+                    <span class="lime-diagnostic-status lime-diagnostic-passed">
+                        Passed
+                    </span>
+
+                    <p>
+                        The original structured input reproduces
+                        the Random Forest prediction within the
+                        configured numerical tolerance.
+                    </p>
+
+                {% else %}
+
+                    <span class="lime-diagnostic-status lime-diagnostic-failed">
+                        Failed — investigate preprocessing
+                    </span>
+
+                    <p>
+                        The original structured input does not
+                        reproduce the Random Forest prediction.
+                        Investigate categorical encoding, Boolean
+                        conversion and missing-value handling.
+                    </p>
+
+                {% endif %}
+
+            </div>
+
+
+            <div class="lime-diagnostic-note">
+
+                <strong>Administrator interpretation:</strong>
+
+                The Random Forest fraud probability represents
+                the model's prediction. The surrogate output is
+                a separate local regression output, while local
+                fidelity measures how closely the surrogate
+                approximates the model in the sampled neighbourhood.
+
+                These measurements serve different purposes and
+                should not be interpreted interchangeably.
+
+            </div>
+
+        {% else %}
+
+            <p>
+                Structured LIME diagnostic measurements are
+                unavailable for this assessment.
+
+                This may occur when the assessment was generated
+                using an earlier version of the explanation pipeline.
+                Generate a new assessment to obtain the updated
+                diagnostic fields.
+            </p>
+
+        {% endif %}
+
+    </section>
+
+
+    <!-- COMPLETE SAVED LIME JSON -->
+
+    <section class="lime-admin-card">
+
+        <h2>Complete saved LIME payload</h2>
+
+        <p>
+            Use this section for technical debugging and auditing.
+            The content below is the complete saved LIME payload
+            formatted as JSON.
+        </p>
+
+        <details>
+
+            <summary>Show raw JSON payload</summary>
+
+            <pre class="lime-admin-json">{{ raw_lime_json }}</pre>
+
+        </details>
+
+    </section>
+
+</div>
+
+{% endblock %}

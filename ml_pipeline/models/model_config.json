@@ -1,41 +1,54 @@
 {
-    "project": "AjiraSafe",
-    "model_type": "RandomForestClassifier",
-    "text_vectorizer": "TfidfVectorizer",
-    "structured_preprocessor": "ColumnTransformer",
-    "classification_threshold": 0.25,
-    "risk_score_scale": "0-100",
-    "risk_categories": {
-        "low_risk": [
-            0,
-            25
-        ],
-        "moderate_risk": [
-            25,
-            50
-        ],
-        "high_risk": [
-            50,
-            75
-        ],
-        "very_high_risk": [
-            75,
-            100
-        ]
+    "total_model_features": 24233,
+    "classification_threshold": 0.24,
+    "model_name": "AjiraSafe Random Forest",
+    "model_type": "Random Forest Classifier",
+    "number_of_trees": 200,
+    "calibration_method": "sigmoid",
+    "calibration_library": "CalibratedClassifierCV",
+    "calibration_estimator": "FrozenEstimator",
+    "class_mapping": {
+        "0": "Legitimate",
+        "1": "Fraudulent"
     },
-    "text_features_count": 20000,
-    "structured_features_count": 4202,
-    "engineered_features": [
-        "urgency_score",
-        "payment_keyword_score",
-        "missing_information_score"
-    ],
-    "total_model_features": 24205,
-    "training_rows": 11443,
-    "test_rows": 3576,
-    "random_forest_parameters": {
-        "n_estimators": 200,
-        "class_weight": "balanced",
-        "random_state": 42
-    }
+    "risk_level_boundaries": {
+        "low": "Below 0.24",
+        "medium": "At or above threshold and below 0.50",
+        "high": "0.50 to below 0.75",
+        "very_high": "0.75 and above"
+    },
+    "data_partitions": {
+        "training": 11622,
+        "calibration": 1788,
+        "validation": 1788,
+        "final_test": 2682
+    },
+    "feature_configuration": {
+        "text_features": 20000,
+        "structured_features": 4230,
+        "engineered_features": 3,
+        "total_features": 24233
+    },
+    "final_test_metrics": {
+        "accuracy": 0.9798657718120806,
+        "fraud_precision": 0.796875,
+        "fraud_recall": 0.7846153846153846,
+        "fraud_f1_score": 0.7906976744186046,
+        "balanced_accuracy": 0.887213648420545,
+        "roc_auc": 0.9833614661200868
+    },
+    "probability_quality": {
+        "original_random_forest": {
+            "brier_score": 0.015354651379567485,
+            "log_loss": 0.06327954576614599,
+            "ece": 0.0142524235645041
+        },
+        "sigmoid_calibrated_random_forest": {
+            "brier_score": 0.01439457771173718,
+            "log_loss": 0.05528484655730371,
+            "ece": 0.004932368978097045
+        }
+    },
+    "scikit_learn_version": "1.6.1",
+    "random_state": 42
 }

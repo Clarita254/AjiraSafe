@@ -42,6 +42,7 @@ from django.views.decorators.http import require_POST
 
 import re
 import json
+import math
 from decimal import Decimal
 from urllib.parse import urlparse
 from .ml_service import (
@@ -49,6 +50,10 @@ from .ml_service import (
     explain_job_lime,
     explain_job_tabular_lime,
 )
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 # =========================================================
 # HOME
@@ -962,8 +967,10 @@ def dashboard(request):
 
         if category not in valid_categories:
             messages.error(request, "Please select a valid feedback category.")
+
         elif not feedback_text:
             messages.error(request, "Please enter your feedback.")
+
         else:
             try:
                 rating = int(rating_value)
@@ -1009,12 +1016,26 @@ def dashboard(request):
         job_url = request.POST.get("job_url", "").strip()
         description = request.POST.get("description", "").strip()
 
+        # Additional structured job fields.
+        salary_range = request.POST.get("salary_range", "").strip()
+        employment_type = request.POST.get("employment_type", "").strip()
+        required_experience = request.POST.get(
+            "required_experience", ""
+        ).strip()
+        required_education = request.POST.get(
+            "required_education", ""
+        ).strip()
+        industry = request.POST.get("industry", "").strip()
+        department = request.POST.get("department", "").strip()
+        job_function = request.POST.get("function", "").strip()
+
         if not title or not company_name or not description:
             messages.error(
                 request,
                 "Please provide the job title, employer name, "
                 "and job description."
             )
+
         else:
             try:
                 # Validate the supplied job URL.
@@ -1041,16 +1062,16 @@ def dashboard(request):
                     "company_profile": "",
                     "requirements": "",
                     "benefits": "",
-                    "department": "",
-                    "salary_range": "",
+                    "department": department,
+                    "salary_range": salary_range,
                     "telecommuting": False,
                     "has_company_logo": False,
                     "has_questions": False,
-                    "employment_type": "",
-                    "required_experience": "",
-                    "required_education": "",
-                    "industry": "",
-                    "function": "",
+                    "employment_type": employment_type,
+                    "required_experience": required_experience,
+                    "required_education": required_education,
+                    "industry": industry,
+                    "function": job_function,
                 }
 
                 # Run the job risk assessment.
@@ -1143,7 +1164,7 @@ def dashboard(request):
                     else "Model prediction with descriptive indicators"
                 )
 
-                # Save the assessment and its related records together.
+                # Save the assessment and related records together.
                 with transaction.atomic():
                     employer = Employer.objects.filter(
                         company_name__iexact=company_name,
@@ -1169,19 +1190,19 @@ def dashboard(request):
                         title=title,
                         description=description,
                         location=location,
-                        department="",
-                        salary_range="",
+                        department=department,
+                        salary_range=salary_range,
                         company_profile="",
                         requirements="",
                         benefits="",
                         telecommuting=False,
                         has_company_logo=False,
                         has_questions=False,
-                        employment_type="",
-                        required_experience="",
-                        required_education="",
-                        industry="",
-                        function="",
+                        employment_type=employment_type,
+                        required_experience=required_experience,
+                        required_education=required_education,
+                        industry=industry,
+                        function=job_function,
                         status=job_status,
                     )
 
@@ -1251,7 +1272,7 @@ def dashboard(request):
                         ),
                     }
 
-                # Redirect to Assess Job after a successful assessment.
+                # Redirect to assessment results after success.
                 request.session["latest_assessment_result"] = (
                     assessment_result
                 )
@@ -1263,7 +1284,8 @@ def dashboard(request):
                 )
 
                 return redirect(
-                    f"{reverse('dashboard')}?tab=assess-job"
+                    "assessment_results",
+                    result_id=result.result_id,
                 )
 
             except MLModel.DoesNotExist:
@@ -1282,22 +1304,22 @@ def dashboard(request):
                 )
                 messages.error(
                     request,
-                    "The assessment could not be completed. Please try "
-                    "again. If the problem continues, check the "
-                    "application logs."
+                    "The assessment could not be completed. Please check "
+                    " the server logs or contact the administrator."
                 )
 
-    # Load feedback submissions and assessment history.
+    # Show only feedback submitted by the logged-in applicant.
     feedback_submissions = (
         Testimonial.objects
         .filter(user=request.user)
         .order_by("-created_at")
     )
 
+    # Load saved assessment history.
     analysis_history = (
         AnalysisResult.objects
         .filter(job__applicant=applicant)
-        .select_related("job", "model")
+        .select_related("job", "job__employer", "model")
         .order_by("-pk")
     )
 
@@ -1311,25 +1333,26 @@ def dashboard(request):
         )
 
         history_rows.append({
-            "id": analysis.pk,
+            "id": analysis.result_id,
             "title": analysis.job.title,
+            "employer": str(analysis.job.employer),
+            "analysis_date": analysis.analysis_date,
             "prediction": analysis.prediction,
             "risk_score": (
                 risk_assessment.risk_score
-                if risk_assessment
-                else None
+                if risk_assessment else None
             ),
             "risk_level": (
                 risk_assessment.risk_level
-                if risk_assessment
-                else "Unavailable"
+                if risk_assessment else "Unavailable"
             ),
         })
 
-    # Calculate dashboard summary cards from saved database records.
-    jobs_analyzed = AnalysisResult.objects.filter(
-        job__applicant=applicant
-    ).count()
+    # Retrieve the latest saved assessment.
+    latest_assessment = analysis_history.first()
+
+    # Dashboard summary cards.
+    jobs_analyzed = analysis_history.count()
 
     high_risk_count = RiskAssessment.objects.filter(
         result__job__applicant=applicant,
@@ -1347,6 +1370,9 @@ def dashboard(request):
         status=Testimonial.Status.PENDING
     ).count()
 
+    # Preserve all required dashboard context variables.
+    active_tab = request.GET.get("tab", "overview")
+
     context = {
         "active_tab": active_tab,
         "jobs_analyzed": jobs_analyzed,
@@ -1354,14 +1380,373 @@ def dashboard(request):
         "reports_count": reports_count,
         "pending_feedback_count": pending_feedback_count,
         "feedback_submissions": feedback_submissions,
-        "assessment_result": assessment_result,
         "analysis_history": history_rows,
-        
+        "latest_assessment": latest_assessment,
+
     }
 
     return render(
         request,
         "core/Applicantdashboard.html",
+        context,
+    )
+
+def build_applicant_lime_summary(lime_data, structured=False):
+    """
+    Convert saved LIME output into a ranked, applicant-friendly table.
+
+    Features are ranked by absolute LIME weight, with the direction
+    derived from the sign of the actual saved weight.
+    Raw numerical weights are not included in the returned rows.
+    """
+    empty_summary = {
+        "available": False,
+        "ranked_features": [],
+    }
+
+    if not isinstance(lime_data, dict):
+        return empty_summary
+
+    features = lime_data.get("features", [])
+
+    if not isinstance(features, list):
+        return empty_summary
+
+    def readable_feature(raw_feature):
+        raw_feature = str(raw_feature).strip()
+
+        if not structured:
+            # Keep the actual text term or phrase identified by LIME.
+            return raw_feature
+
+        if "=" in raw_feature:
+            field, value = raw_feature.split("=", 1)
+
+            field_label = field.replace("_", " ").strip().capitalize()
+            value = value.strip()
+
+            if value == "__MISSING__":
+                value = "Not specified in the advertisement"
+            elif value == "__UNSEEN__":
+                value = "Unrecognised category"
+
+            return f"{field_label}: {value}"
+
+        return raw_feature.replace("_", " ").strip().capitalize()
+
+    contributions = []
+
+    for item in features:
+        if not isinstance(item, dict):
+            continue
+
+        raw_feature = item.get("feature")
+        raw_weight = item.get("weight")
+
+        if raw_feature is None:
+            continue
+
+        try:
+            weight = float(raw_weight)
+        except (TypeError, ValueError):
+            continue
+
+        if not math.isfinite(weight):
+            continue
+
+        feature_label = readable_feature(raw_feature)
+
+        if not feature_label:
+            continue
+
+        if weight > 0:
+            direction = "Increases the estimated fraud probability"
+        elif weight < 0:
+            direction = "Decreases the estimated fraud probability"
+        else:
+            direction = "No directional contribution"
+
+        contributions.append((
+            abs(weight),
+            {
+                "feature": feature_label,
+                "direction": direction,
+            },
+        ))
+
+    # Rank by the magnitude of the actual LIME contribution.
+    contributions.sort(
+        key=lambda contribution: contribution[0],
+        reverse=True,
+    )
+
+    ranked_features = [
+        {
+            "rank": rank,
+            **feature_data,
+        }
+        for rank, (_, feature_data) in enumerate(
+            contributions,
+            start=1,
+        )
+    ]
+
+    return {
+        "available": bool(ranked_features),
+        "ranked_features": ranked_features,
+    }
+
+@login_required(login_url="login")
+@never_cache
+def assessment_results(request, result_id):
+    # Only job applicants can view applicant assessment results.
+    if not request.user.groups.filter(
+        name="Job Applicant"
+    ).exists():
+        if request.user.groups.filter(
+            name="System Administrator"
+        ).exists():
+            return redirect("admin_dashboard")
+
+        return redirect("home")
+
+    # Retrieve the applicant profile.
+    try:
+        applicant = request.user.job_applicant
+    except JobApplicant.DoesNotExist:
+        messages.error(
+            request,
+            "Your applicant profile could not be found."
+        )
+        return redirect("home")
+
+    # Retrieve only an assessment belonging to this applicant.
+    result = get_object_or_404(
+        AnalysisResult.objects.select_related(
+            "job",
+            "job__employer",
+            "model",
+        ).prefetch_related("explanations"),
+        result_id=result_id,
+        job__applicant=applicant,
+    )
+
+    # Retrieve the risk assessment, if one exists.
+    risk_assessment = getattr(
+        result,
+        "risk_assessment",
+        None,
+    )
+
+    # Retrieve and safely parse the saved LIME explanation.
+    explanation = result.explanations.first()
+    explanation_payload = {}
+
+    if explanation and explanation.key_contribution_features:
+        try:
+            parsed_payload = json.loads(
+                explanation.key_contribution_features
+            )
+
+            if isinstance(parsed_payload, dict):
+                explanation_payload = parsed_payload
+
+        except (json.JSONDecodeError, TypeError):
+            explanation_payload = {}
+
+    # Build applicant-friendly summaries from the actual LIME output.
+    # These summaries omit the technical weights and raw JSON.
+    text_lime_summary = build_applicant_lime_summary(
+        explanation_payload.get("text_lime"),
+        structured=False,
+    )
+
+    structured_lime_summary = build_applicant_lime_summary(
+        explanation_payload.get("structured_lime"),
+        structured=True,
+    )
+
+    # Convert the stored probability to a percentage for display.
+    probability_percent = (
+        float(result.prediction_probability) * 100
+        if result.prediction_probability is not None
+        else None
+    )
+
+    # Retrieve the stored risk level safely.
+    risk_level = (
+        risk_assessment.risk_level
+        if risk_assessment is not None
+        else None
+    )
+
+    # Convert the internal risk level into a user-friendly display label.
+    risk_level_display = (
+        str(risk_level).replace("_", " ").title()
+        if risk_level
+        else "Unavailable"
+    )
+
+    # Provide a risk interpretation based on the assessment risk level.
+    risk_interpretations = {
+        "low": (
+            "This listing has a low assessed risk. "
+            "Nevertheless, verify the employer and "
+            "review the job details before proceeding."
+        ),
+
+        "medium": (
+            "This listing has a medium assessed risk. "
+            "Exercise caution and independently verify "
+            "the employer before proceeding."
+        ),
+
+        "high": (
+            "This listing has a high assessed risk. "
+            "Carefully verify the employer and job details "
+            "before sharing personal information."
+        ),
+
+        "very_high": (
+            "This listing has a very high assessed risk. "
+            "Avoid sending money or sensitive personal "
+            "information, and independently verify the "
+            "employer before proceeding."
+        ),
+    }
+
+    risk_interpretation = risk_interpretations.get(
+        str(risk_level).lower() if risk_level else "",
+        "The risk level could not be determined. "
+        "Please independently verify the employer."
+    )
+
+    # Prepare the template context.
+    context = {
+        "result": result,
+        "job": result.job,
+        "risk_assessment": risk_assessment,
+        "explanation": explanation,
+        "text_lime_summary": text_lime_summary,
+        "structured_lime_summary": structured_lime_summary,
+        "fraud_probability_percent": probability_percent,
+        "risk_level_display": risk_level_display,
+        "risk_interpretation": risk_interpretation,
+
+        # Employer verification is separate from the model prediction.
+        "employer_verification": "Not verified",
+    }
+    return render(
+        request,
+        "core/assessment_results.html",
+        context,
+    )
+
+
+
+
+@login_required(login_url="login")
+@never_cache
+def admin_lime_explanation(request, result_id):
+    # Only system administrators can access technical LIME details.
+    if not request.user.groups.filter(
+        name="System Administrator"
+    ).exists():
+        return HttpResponseForbidden(
+            "You are not authorised to view technical LIME explanations."
+        )
+
+    result = get_object_or_404(
+        AnalysisResult.objects.select_related(
+            "job",
+            "job__employer",
+            "model",
+        ).prefetch_related("explanations"),
+        result_id=result_id,
+    )
+
+    explanation = result.explanations.first()
+    lime_payload = {}
+
+    if explanation and explanation.key_contribution_features:
+        try:
+            parsed_payload = json.loads(
+                explanation.key_contribution_features
+            )
+
+            if isinstance(parsed_payload, dict):
+                lime_payload = parsed_payload
+
+        except (json.JSONDecodeError, TypeError):
+            lime_payload = {}
+
+    # Format the saved LIME data for administrator display.
+    raw_lime_json = json.dumps(
+        lime_payload,
+        indent=2,
+        ensure_ascii=False,
+    )
+
+    # Retrieve the saved LIME explanations.
+    text_lime = lime_payload.get("text_lime")
+    structured_lime = lime_payload.get("structured_lime")
+
+    # Prepare structured LIME diagnostics.
+    structured_lime_metrics = None
+
+    if isinstance(structured_lime, dict):
+        try:
+            model_prediction = float(
+                structured_lime["model_prediction"]
+            )
+
+            surrogate_output = float(
+                structured_lime["surrogate_output"]
+            )
+
+            local_fidelity = float(
+                structured_lime["local_fidelity"]
+            )
+
+            lime_input_prediction = float(
+                structured_lime["lime_input_prediction"]
+            )
+
+            input_prediction_matches_model = bool(
+                structured_lime["input_prediction_matches_model"]
+            )
+
+            structured_lime_metrics = {
+                "model_prediction_percent": (
+                    model_prediction * 100
+                ),
+                "surrogate_output": surrogate_output,
+                "local_fidelity": local_fidelity,
+                "lime_input_prediction_percent": (
+                    lime_input_prediction * 100
+                ),
+                "input_prediction_matches_model": (
+                    input_prediction_matches_model
+                ),
+            }
+
+        except (KeyError, TypeError, ValueError):
+            structured_lime_metrics = None
+
+    # Prepare the template context.
+    context = {
+        "result": result,
+        "job": result.job,
+        "explanation": explanation,
+        "text_lime": text_lime,
+        "structured_lime": structured_lime,
+        "structured_lime_metrics": structured_lime_metrics,
+        "raw_lime_json": raw_lime_json,
+    }
+
+    return render(
+        request,
+        "core/admin_lime_explanation.html",
         context,
     )
 
@@ -1469,7 +1854,11 @@ def admin_dashboard(request):
             "verified_by__user",
         ).order_by("-verification_date")[:5]
     )
-
+    recent_analysis_results = (
+            AnalysisResult.objects
+            .select_related("job", "job__employer", "model")
+            .order_by("-analysis_date")[:10]
+        )
     # Dashboard context.
     context = {
         "total_users": total_users,
@@ -1499,8 +1888,11 @@ def admin_dashboard(request):
         "recent_feedback": recent_feedback,
         "recent_employers": recent_employers,
         "recent_verifications": recent_verifications,
+        "recent_analysis_results": recent_analysis_results,
+        
     }
 
+    
     return render(
         request,
         "core/AdminDashboard.html",

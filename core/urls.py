@@ -26,7 +26,17 @@ urlpatterns = [
    ),
    path("admin-dashboard/", views.admin_dashboard, name="admin_dashboard"),
 
-   
 
+path(
+    "administrator/assessment-results/<int:result_id>/lime/",
+    views.admin_lime_explanation,
+    name="admin_lime_explanation",
+),
+
+path(
+    "assessment-results/<int:result_id>/",
+    views.assessment_results,
+    name="assessment_results",
+),
    path("logout/", views.logout_view, name="logout"),
 ]

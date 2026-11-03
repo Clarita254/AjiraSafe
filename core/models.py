@@ -108,7 +108,7 @@ class JobAdvertisement(models.Model):
 
     employment_type = models.CharField(max_length=100, blank=True)
     required_experience = models.CharField(max_length=100, blank=True)
-    required_education = models.CharField(max_length=100, blank=True)
+    required_education = models.CharField(max_length=255, blank=True)
     industry = models.CharField(max_length=150, blank=True)
     function = models.CharField(max_length=150, blank=True)
 
