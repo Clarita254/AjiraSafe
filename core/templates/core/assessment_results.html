@@ -447,13 +447,63 @@
     white-space: nowrap;
 }
 
-.ar-pill-warning::before {
+.ar-pill-success,
+.ar-pill-danger,
+.ar-pill-info {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 13px;
+    border: 1px solid transparent;
+    border-radius: 30px;
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.ar-pill-success {
+    border-color: #9bd3ad;
+    background: #e5f6eb;
+    color: #176b40;
+}
+
+.ar-pill-danger {
+    border-color: #f0b5b5;
+    background: #fdecec;
+    color: #a93232;
+}
+
+.ar-pill-info {
+    border-color: #b8d7f0;
+    background: #eaf4fc;
+    color: #245a91;
+}
+
+.ar-pill-warning::before,
+.ar-pill-success::before,
+.ar-pill-danger::before,
+.ar-pill-info::before {
     content: "";
     width: 7px;
     height: 7px;
     flex-shrink: 0;
     border-radius: 50%;
+}
+
+.ar-pill-warning::before {
     background: #d98b0b;
+}
+
+.ar-pill-success::before {
+    background: #21834f;
+}
+
+.ar-pill-danger::before {
+    background: #c33b3b;
+}
+
+.ar-pill-info::before {
+    background: #347db6;
 }
 
 
@@ -467,6 +517,230 @@
     color: #566b82;
     font-size: 13px;
     line-height: 1.8;
+}
+
+.ar-employer-verification h2 {
+    margin-bottom: 20px !important;
+}
+
+.ar-employer-overview {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 18px;
+    border: 1px solid #D7E5EF;
+    border-radius: 14px;
+    background: linear-gradient(120deg, #FFFFFF 0%, #F2F8FC 100%);
+}
+
+.ar-employer-identity,
+.ar-employer-status {
+    display: grid;
+    justify-items: start;
+    gap: 7px;
+    min-width: 0;
+}
+
+.ar-employer-label {
+    color: #64788E;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+
+.ar-employer-identity strong {
+    color: #142B49;
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+}
+
+.ar-employer-status {
+    justify-items: end;
+}
+
+.ar-employer-status .ar-pill {
+    font-size: 12px;
+}
+
+.ar-employer-guidance {
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+    margin-top: 14px;
+    padding: 13px 15px;
+    border: 1px solid #D6E4EF;
+    border-left: 4px solid #3B82A0;
+    border-radius: 10px;
+    background: #F1F7FB;
+}
+
+.ar-employer-guidance-icon {
+    display: grid;
+    place-items: center;
+    width: 23px;
+    height: 23px;
+    flex: 0 0 23px;
+    border-radius: 50%;
+    background: #DCECF5;
+    color: #245A78;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.ar-employer-guidance p,
+.ar-two-column .ar-employer-guidance p {
+    margin: 1px 0 0;
+    padding: 0;
+    background: transparent;
+    color: #40566D;
+    font-size: 12px;
+    line-height: 1.65;
+}
+
+.ar-employer-review {
+    margin-top: 16px;
+    padding: 16px 18px;
+    border: 1px solid #DFE7EF;
+    border-radius: 12px;
+    background: #FFFFFF;
+}
+
+.ar-employer-review h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    color: #344B64;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.ar-employer-review h3::before {
+    content: "";
+    width: 4px;
+    height: 16px;
+    border-radius: 4px;
+    background: #079B91;
+}
+
+.ar-employer-review p,
+.ar-two-column .ar-employer-review p {
+    margin: 9px 0 0;
+    padding: 0;
+    background: transparent;
+    color: #40566D;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.75;
+    text-align: left;
+}
+
+.ar-employer-meta {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin: 13px 0 0;
+}
+
+.ar-employer-meta > div {
+    min-width: 0;
+    padding: 12px 14px;
+    border: 1px solid #E1E8F0;
+    border-radius: 10px;
+    background: #F7F9FC;
+}
+
+.ar-employer-meta dt {
+    margin-bottom: 5px;
+    color: #687B90;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .3px;
+}
+
+.ar-employer-meta dd {
+    margin: 0;
+    color: #263D56;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.ar-two-column .ar-assessment-details > .ar-assessment-intro {
+    margin: -12px 0 18px;
+    padding: 0;
+    background: transparent;
+    color: #5D7188;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.ar-assessment-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 11px;
+    margin: 0;
+}
+
+.ar-assessment-item {
+    min-width: 0;
+    padding: 14px 15px;
+    border: 1px solid #DCE5F0;
+    border-radius: 11px;
+    background: rgba(255, 255, 255, .82);
+}
+
+.ar-assessment-item.featured {
+    grid-column: 1 / -1;
+    padding: 17px 18px;
+    border-color: #C8D7F3;
+    background: linear-gradient(120deg, #FFFFFF 0%, #F2F5FF 100%);
+}
+
+.ar-assessment-item dt {
+    margin-bottom: 6px;
+    color: #657990;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .65px;
+    text-transform: uppercase;
+}
+
+.ar-assessment-item dd {
+    margin: 0;
+    color: #263D56;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.ar-assessment-item.featured dd {
+    color: #173F73;
+    font-size: 16px;
+    font-weight: 800;
+}
+
+.ar-assessment-score {
+    border-color: #C5D8F7;
+    background: #EDF4FF;
+}
+
+.ar-assessment-score dd {
+    color: #245A91;
+    font-size: 18px;
+    font-weight: 850;
+}
+
+.ar-assessment-score dd span {
+    margin-left: 3px;
+    color: #64788E;
+    font-size: 11px;
+    font-weight: 700;
 }
 
 
@@ -1055,6 +1329,27 @@
         text-align: left;
     }
 
+    .ar-employer-overview {
+        grid-template-columns: minmax(0, 1fr);
+        justify-items: start;
+    }
+
+    .ar-employer-status {
+        justify-items: start;
+    }
+
+    .ar-employer-meta {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .ar-assessment-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .ar-assessment-item.featured {
+        grid-column: auto;
+    }
+
     /* Explainable AI container */
 
     .ar-explanation {
@@ -1284,65 +1579,116 @@
             {% endwith %}
 
             <section class="ar-two-column">
-                <article class="ar-card">
+                <article class="ar-card ar-employer-verification">
                     <h2>Employer verification</h2>
 
-                    <div class="ar-detail-row">
-                        <span class="ar-detail-label">Employer name</span>
-                        <span class="ar-detail-value">
-                            {{ job.employer }}
-                        </span>
+                    <div class="ar-employer-overview">
+                        <div class="ar-employer-identity">
+                            <span class="ar-employer-label">EMPLOYER</span>
+                            <strong>{{ job.employer }}</strong>
+                        </div>
+                        <div class="ar-employer-status">
+                            <span class="ar-employer-label">VERIFICATION STATUS</span>
+                            {% if employer_verification_status == "verified" %}
+                                <span class="ar-pill ar-pill-success">
+                                    {{ employer_verification }}
+                                </span>
+                            {% elif employer_verification_status == "rejected" %}
+                                <span class="ar-pill ar-pill-danger">
+                                    {{ employer_verification }}
+                                </span>
+                            {% elif employer_verification_status == "pending" %}
+                                <span class="ar-pill ar-pill-info">
+                                    {{ employer_verification }}
+                                </span>
+                            {% else %}
+                                <span class="ar-pill ar-pill-warning">
+                                    {{ employer_verification }}
+                                </span>
+                            {% endif %}
+                        </div>
                     </div>
 
-                    <div class="ar-detail-row">
-                        <span class="ar-detail-label">Verification status</span>
-                        <span class="ar-detail-value">
-                            <span class="ar-pill ar-pill-warning">
-                                Not verified
-                            </span>
+                    <div class="ar-employer-guidance">
+                        <span class="ar-employer-guidance-icon" aria-hidden="true">
+                            {% if employer_verification_status == "verified" %}✓
+                            {% elif employer_verification_status == "rejected" %}!
+                            {% else %}i{% endif %}
                         </span>
+                        <p>
+                            {% if employer_verification_status == "verified" %}
+                                This employer has been marked as verified by an
+                                administrator. This does not guarantee that every
+                                job advertisement is legitimate.
+                            {% elif employer_verification_status == "rejected" %}
+                                An administrator could not verify this employer.
+                                Exercise caution and do not share money or sensitive
+                                personal information.
+                            {% elif employer_verification_status == "unverified" %}
+                                This employer has not been verified by an
+                                administrator. Independently check the organization
+                                before proceeding.
+                            {% else %}
+                                This employer is awaiting administrator verification.
+                                This status alone does not prove that the employer is
+                                fraudulent.
+                            {% endif %}
+                        </p>
                     </div>
 
-                    <p>
-                        This status means the employer has not been
-                        confirmed as verified by this system. It does
-                        not, by itself, prove that the employer is
-                        fraudulent.
-                    </p>
+                    <section class="ar-employer-review" aria-label="Administrator review">
+                        <h3>Administrator's review summary</h3>
+                        <p>
+                            {{ employer_review_summary|default:"No review summary is available." }}
+                        </p>
+                    </section>
+
+                    <dl class="ar-employer-meta">
+                        <div>
+                            <dt>Decision date</dt>
+                            <dd>
+                                {% if employer_verification_date %}
+                                    {{ employer_verification_date|date:"d M Y, H:i" }}
+                                {% else %}
+                                    Not yet reviewed
+                                {% endif %}
+                            </dd>
+                        </div>
+                        <div>
+                            <dt>Reviewed by</dt>
+                            <dd>
+                                {{ employer_verification_administrator|default:"Not yet assigned" }}
+                            </dd>
+                        </div>
+                    </dl>
                 </article>
 
-                <article class="ar-card">
+                <article class="ar-card ar-assessment-details">
                     <h2>Assessment details</h2>
+                    <p class="ar-assessment-intro">
+                        Key details from the job listing and its assessment.
+                    </p>
 
-                    <div class="ar-detail-row">
-                        <span class="ar-detail-label">Job title</span>
-                        <span class="ar-detail-value">
-                            {{ job.title }}
-                        </span>
-                    </div>
-
-                    <div class="ar-detail-row">
-                        <span class="ar-detail-label">Location</span>
-                        <span class="ar-detail-value">
-                            {{ job.location|default:"Not provided" }}
-                        </span>
-                    </div>
-
-                    <div class="ar-detail-row">
-                        <span class="ar-detail-label">Assessment date</span>
-                        <span class="ar-detail-value">
-                            {{ result.analysis_date|date:"d M Y, H:i" }}
-                        </span>
-                    </div>
-
-                    {% if risk_assessment %}
-                    <div class="ar-detail-row">
-                        <span class="ar-detail-label">Risk score</span>
-                        <span class="ar-detail-value">
-                            {{ risk_assessment.risk_score }}/100
-                        </span>
-                    </div>
-                    {% endif %}
+                    <dl class="ar-assessment-grid">
+                        <div class="ar-assessment-item featured">
+                            <dt>Job title</dt>
+                            <dd>{{ job.title }}</dd>
+                        </div>
+                        <div class="ar-assessment-item">
+                            <dt>Location</dt>
+                            <dd>{{ job.location|default:"Not provided" }}</dd>
+                        </div>
+                        <div class="ar-assessment-item">
+                            <dt>Assessment date</dt>
+                            <dd>{{ result.analysis_date|date:"d M Y, H:i" }}</dd>
+                        </div>
+                        {% if risk_assessment %}
+                            <div class="ar-assessment-item ar-assessment-score">
+                                <dt>Risk score</dt>
+                                <dd>{{ risk_assessment.risk_score }}<span>/100</span></dd>
+                            </div>
+                        {% endif %}
+                    </dl>
                 </article>
             </section>
 

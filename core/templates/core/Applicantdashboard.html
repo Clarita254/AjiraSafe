@@ -5,6 +5,10 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'core/css/applicant-dashboard.css' %}">
+<link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/intl-tel-input@latest/build/css/intlTelInput.css"
+>
 <style>
 .toast-container {
     position: fixed;
@@ -72,7 +76,15 @@
     border-color: #bfdbfe;
     color: #1d4ed8;
 }
-
+/* Form section headings */
+.form-section-heading {
+    color: #078F91;
+    font-size: 19px;
+    font-weight: 600;
+    margin-top: 24px;
+    margin-bottom: 20px;
+    letter-spacing: 0;
+}
 @keyframes toast-appear {
     from {
         opacity: 0;
@@ -679,30 +691,77 @@
 
 
 
+/* Inline field validation */
+.field-error-message {
+    color: #dc2626;
+    font-size: 0.85rem;
+    margin-top: 6px;
+    margin-bottom: 12px;
+    font-weight: 500;
+}
+
+.field-error-message[hidden] {
+    display: none;
+}
+
+.field-invalid {
+    border: 1px solid #dc2626 !important;
+    outline: none;
+}
+
+.field-invalid:focus {
+    border-color: #dc2626 !important;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+}
+/* International telephone input */
+.iti {
+    width: 100%;
+}
+
+.iti input {
+    width: 100%;
+}
+
+.iti__country-list {
+    z-index: 10000;
+}
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="app-dashboard">
 {% if messages %}
-    <div class="toast-container" aria-live="polite" aria-atomic="true">
+    <div class="toast-container" role="alert" aria-live="assertive">
         {% for message in messages %}
-            <div class="toast-message {{ message.tags }}" role="alert">
+            <div class="toast-message {{ message.tags }}">
                 <span class="toast-icon" aria-hidden="true">
-                    {% if message.tags == "success" %}✓{% else %}i{% endif %}
+                    {% if message.tags == "error" %}
+                        !
+                    {% elif message.tags == "success" %}
+                        ✓
+                    {% elif message.tags == "warning" %}
+                        !
+                    {% else %}
+                        i
+                    {% endif %}
                 </span>
 
-                <span class="toast-text">{{ message }}</span>
+                <div class="toast-text">
+                    {{ message }}
+                </div>
 
-                <button type="button"
-                        class="toast-close"
-                        aria-label="Dismiss notification">
+                <button
+                    type="button"
+                    class="toast-close"
+                    aria-label="Dismiss notification"
+                    onclick="this.parentElement.remove()"
+                >
                     &times;
                 </button>
             </div>
         {% endfor %}
     </div>
 {% endif %}
+<div class="app-dashboard">
     <!-- SIDEBAR -->
     <aside class="app-sidebar" aria-label="Applicant dashboard navigation">
         <div class="sidebar-profile">
@@ -963,7 +1022,7 @@
 
                 <div class="assessment-form-panel">
                     <div class="form-panel-heading">
-                        <h2>Job details</h2>
+                        <h3 class="form-section-heading">Job details</h3>
                         <span class="required-note">
                             Fields marked * are required
                         </span>
@@ -990,6 +1049,7 @@
                             name="title"
                             type="text"
                             placeholder="e.g. Graduate Trainee"
+                            value="{{ assessment_form_data.title|default:'' }}"
                             required
                         >
 
@@ -1001,6 +1061,7 @@
                             name="company_name"
                             type="text"
                             placeholder="Enter the advertised employer"
+                            value="{{ assessment_form_data.company_name|default:'' }}"
                             required
                         >
 
@@ -1012,6 +1073,7 @@
                             name="location"
                             type="text"
                             placeholder="e.g. Nairobi or Remote"
+                            value="{{ assessment_form_data.location|default:'' }}"
                         >
 
                         <label for="job-url">
@@ -1025,11 +1087,109 @@
                             name="job_url"
                             type="url"
                             placeholder="https://example.com/job-listing"
+                            value="{{ assessment_form_data.job_url|default:'' }}"
                         >
 
-                       
+ 
+<!-- Employer Information Section -->
+<div class="employer-information-section">
+
+    <h3 class="form-section-heading">Employer Information</h3>
+    <label for="employer-website">
+        Official company website
+    </label>
+    <input
+        id="employer-website"
+        name="website"
+        type="url"
+        placeholder="https://www.company.com"
+        value="{{ assessment_form_data.website|default:'' }}"
+    >
+
+    <label for="company-reg-number">
+        Company registration number
+    </label>
+    <input
+        id="company-reg-number"
+        name="company_reg_number"
+        type="text"
+        placeholder="Enter the official registration number"
+        value="{{ assessment_form_data.company_reg_number|default:'' }}"
+    >
+
+    <label for="contact-email">
+        Official contact email
+    </label>
+    <input
+        id="contact-email"
+        name="contact_email"
+        type="email"
+        placeholder="e.g. info@company.com"
+        value="{{ assessment_form_data.contact_email|default:'' }}"
+    >
+<p
+    id="contact-email-error"
+    class="field-error-message"
+    role="alert"
+    aria-live="polite"
+    hidden
+></p>
+   
+<label for="contact-phone">
+    Official contact phone
+</label>
+
+<input
+    id="contact-phone"
+    name="contact_phone"
+    type="tel"
+    placeholder="Enter phone number"
+    value="{{ assessment_form_data.contact_phone|default:'' }}"
+    autocomplete="tel"
+>
+
+<p
+    id="contact-phone-error"
+    class="field-error-message"
+    role="alert"
+    aria-live="polite"
+    hidden
+></p>
+
+</div>
+<!-- End Employer Information Section -->
+                      
 
 <!-- Additional structured job details -->
+<h3 class="form-section-heading">Additional job details</h3>
+
+<!-- ML-related job characteristics -->
+<div class="form-group">
+    <label for="telecommuting">Is this a remote/telecommuting position?</label>
+    <select id="telecommuting" name="telecommuting" required>
+        <option value="" {% if not assessment_form_data.telecommuting %}selected{% endif %}>Select an option</option>
+        <option value="yes" {% if assessment_form_data.telecommuting == "yes" %}selected{% endif %}>Yes</option>
+        <option value="no" {% if assessment_form_data.telecommuting == "no" %}selected{% endif %}>No</option>
+    </select>
+</div>
+
+<div class="form-group">
+    <label for="has-company-logo">Does the original job advertisement display a company logo?</label>
+    <select id="has-company-logo" name="has_company_logo" required>
+        <option value="" {% if not assessment_form_data.has_company_logo %}selected{% endif %}>Select an option</option>
+        <option value="yes" {% if assessment_form_data.has_company_logo == "yes" %}selected{% endif %}>Yes</option>
+        <option value="no" {% if assessment_form_data.has_company_logo == "no" %}selected{% endif %}>No</option>
+    </select>
+</div>
+
+<div class="form-group">
+    <label for="has-questions">Does the job advertisement include screening questions?</label>
+    <select id="has-questions" name="has_questions" required>
+        <option value="" {% if not assessment_form_data.has_questions %}selected{% endif %}>Select an option</option>
+        <option value="yes" {% if assessment_form_data.has_questions == "yes" %}selected{% endif %}>Yes</option>
+        <option value="no" {% if assessment_form_data.has_questions == "no" %}selected{% endif %}>No</option>
+    </select>
+</div>
 
 <label for="salary-range">Salary range</label>
 <input
@@ -1037,28 +1197,29 @@
     name="salary_range"
     type="text"
     placeholder="e.g. KES 30,000–50,000 per month"
+    value="{{ assessment_form_data.salary_range|default:'' }}"
 >
 
 <label for="employment-type">Employment type</label>
 <select id="employment-type" name="employment_type">
-    <option value="">Not specified</option>
-    <option value="Full-time">Full-time</option>
-    <option value="Part-time">Part-time</option>
-    <option value="Contract">Contract</option>
-    <option value="Temporary">Temporary</option>
-    <option value="Internship">Internship</option>
-    <option value="Other">Other</option>
+    <option value="" {% if not assessment_form_data.employment_type %}selected{% endif %}>Not specified</option>
+    <option value="Full-time" {% if assessment_form_data.employment_type == "Full-time" %}selected{% endif %}>Full-time</option>
+    <option value="Part-time" {% if assessment_form_data.employment_type == "Part-time" %}selected{% endif %}>Part-time</option>
+    <option value="Contract" {% if assessment_form_data.employment_type == "Contract" %}selected{% endif %}>Contract</option>
+    <option value="Temporary" {% if assessment_form_data.employment_type == "Temporary" %}selected{% endif %}>Temporary</option>
+    <option value="Internship" {% if assessment_form_data.employment_type == "Internship" %}selected{% endif %}>Internship</option>
+    <option value="Other" {% if assessment_form_data.employment_type == "Other" %}selected{% endif %}>Other</option>
 </select>
 
 <label for="required-experience">Required experience</label>
 <select id="required-experience" name="required_experience">
-    <option value="">Not specified</option>
-    <option value="Entry-level">Entry-level</option>
-    <option value="Internship">Internship</option>
-    <option value="1-3 years">1–3 years</option>
-    <option value="3-5 years">3–5 years</option>
-    <option value="5+ years">5+ years</option>
-    <option value="Other">Other</option>
+    <option value="" {% if not assessment_form_data.required_experience %}selected{% endif %}>Not specified</option>
+    <option value="Entry-level" {% if assessment_form_data.required_experience == "Entry-level" %}selected{% endif %}>Entry-level</option>
+    <option value="Internship" {% if assessment_form_data.required_experience == "Internship" %}selected{% endif %}>Internship</option>
+    <option value="1-3 years" {% if assessment_form_data.required_experience == "1-3 years" %}selected{% endif %}>1–3 years</option>
+    <option value="3-5 years" {% if assessment_form_data.required_experience == "3-5 years" %}selected{% endif %}>3–5 years</option>
+    <option value="5+ years" {% if assessment_form_data.required_experience == "5+ years" %}selected{% endif %}>5+ years</option>
+    <option value="Other" {% if assessment_form_data.required_experience == "Other" %}selected{% endif %}>Other</option>
 </select>
 
 <label for="required-education">Required education</label>
@@ -1067,6 +1228,7 @@
     name="required_education"
     type="text"
     placeholder="e.g. Bachelor's degree"
+    value="{{ assessment_form_data.required_education|default:'' }}"
 >
 
 <label for="industry">Industry</label>
@@ -1075,6 +1237,7 @@
     name="industry"
     type="text"
     placeholder="e.g. Information Technology"
+    value="{{ assessment_form_data.industry|default:'' }}"
 >
 
 <label for="department">
@@ -1086,6 +1249,7 @@
     name="department"
     type="text"
     placeholder="e.g. Software Development"
+    value="{{ assessment_form_data.department|default:'' }}"
 >
 
 <label for="job-function">
@@ -1097,6 +1261,7 @@
     name="function"
     type="text"
     placeholder="e.g. Software Engineering"
+    value="{{ assessment_form_data.function|default:'' }}"
 >
  <label for="job-description">
                             Job advertisement text <span>*</span>
@@ -1107,7 +1272,14 @@
                             rows="6"
                             placeholder="Paste the job description, requirements, salary details and application instructions..."
                             required
-                        ></textarea>
+                        >{{ assessment_form_data.description|default:'' }}</textarea>
+                        <p
+    id="job-description-error"
+    class="field-error-message"
+    role="alert"
+    aria-live="polite"
+    hidden
+></p>
                         <div class="form-notice">
                             <span aria-hidden="true">i</span>
                             <p>
@@ -1510,9 +1682,11 @@
     </main>
 </div>
 
-
+<script src="https://cdn.jsdelivr.net/npm/intl-tel-input@latest/build/js/intlTelInput.min.js"></script>
 <script>
-document.addEventListener("DOMContentLoaded", function () {
+    document.addEventListener("DOMContentLoaded", function () {
+
+
     // Dismiss notification messages.
     document.querySelectorAll(".toast-message").forEach(function (toast) {
         const closeButton = toast.querySelector(".toast-close");
@@ -1583,8 +1757,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Open the dashboard tab specified in the URL.
     // Successful job assessments should return to ?tab=assess-job.
-    const params = new URLSearchParams(window.location.search);
-    const requestedTab = params.get("tab");
+    const requestedTab = "{{ active_tab|escapejs }}";
 
     const validTabs = [
         "overview",
@@ -1599,7 +1772,183 @@ document.addEventListener("DOMContentLoaded", function () {
         : "overview";
 
     showPanel(initialTab);
-});
+    
+// Initialise the international phone number selector.
+const phoneInput = document.getElementById("contact-phone");
+const phoneError = document.getElementById("contact-phone-error");
+const assessmentForm = document.getElementById("job-assessment-form");
+
+if (phoneInput && assessmentForm && window.intlTelInput) {
+
+    const phoneInputInstance = window.intlTelInput(phoneInput, {
+        initialCountry: "ke",
+        separateDialCode: true,
+        nationalMode: true,
+        allowDropdown: true,
+        loadUtils: () => import(
+            "https://cdn.jsdelivr.net/npm/intl-tel-input@latest/build/js/utils.js"
+        )
+    });
+
+    // Clear the inline error when the applicant edits the number.
+    phoneInput.addEventListener("input", function () {
+        phoneInput.classList.remove("field-invalid");
+        phoneInput.removeAttribute("aria-invalid");
+        phoneInput.removeAttribute("aria-describedby");
+
+        if (phoneError) {
+            phoneError.textContent = "";
+            phoneError.hidden = true;
+        }
+    });
+
+    // Validate the number before submitting the assessment form.
+    let phoneReadyToSubmit = false;
+
+    assessmentForm.addEventListener("submit", async function (event) {
+
+        // Allow the form to submit after successful phone validation.
+        if (phoneReadyToSubmit) {
+            phoneReadyToSubmit = false;
+            return;
+        }
+
+        const enteredNumber = phoneInput.value.trim();
+
+        // The phone number is optional.
+        if (!enteredNumber) {
+            return;
+        }
+
+        // Wait for the phone validation utilities to load.
+        event.preventDefault();
+
+        await phoneInputInstance.promise;
+
+        if (!phoneInputInstance.isValidNumber()) {
+
+            if (phoneError) {
+                phoneError.textContent =
+                    "Please enter a valid contact phone number for the selected country.";
+                phoneError.hidden = false;
+            }
+
+            phoneInput.classList.add("field-invalid");
+            phoneInput.setAttribute("aria-invalid", "true");
+            phoneInput.setAttribute(
+                "aria-describedby",
+                "contact-phone-error"
+            );
+
+            phoneInput.scrollIntoView({
+                behavior: "smooth",
+                block: "center"
+            });
+
+            phoneInput.focus({ preventScroll: true });
+            return;
+        }
+
+        // Send the complete international number to Django.
+        phoneInput.value = phoneInputInstance.getNumber();
+
+        phoneReadyToSubmit = true;
+        assessmentForm.requestSubmit();
+    });
+}
+
+    // Automatically scroll to the field associated with a validation error.
+    const validationFields = [
+        { keywords: ["job title"], id: "job-title" },
+        { keywords: ["company name"], id: "company-name" },
+        { keywords: ["job description"], id: "job-description" },
+        { keywords: ["location"], id: "job-location" },
+        { keywords: ["job url"], id: "job-url" },
+        { keywords: ["employer website"], id: "employer-website" },
+        { keywords: ["company registration number"], id: "company-reg-number" },
+        { keywords: ["contact email"], id: "contact-email" },
+        { keywords: ["contact phone"], id: "contact-phone" },
+        { keywords: ["telecommuting"], id: "telecommuting" },
+        { keywords: ["company logo"], id: "has-company-logo" },
+        { keywords: ["screening questions"], id: "has-questions" },
+        { keywords: ["salary range"], id: "salary-range" },
+        { keywords: ["employment type"], id: "employment-type" },
+        { keywords: ["required experience"], id: "required-experience" },
+        { keywords: ["required education"], id: "required-education" },
+        { keywords: ["department"], id: "department" },
+        { keywords: ["industry"], id: "industry" },
+        { keywords: ["function"], id: "function" }
+    ];
+
+    const errorMessages = document.querySelectorAll(".toast-message");
+
+    for (const message of errorMessages) {
+        const messageText = message.textContent.toLowerCase();
+
+        // Process error messages only.
+        if (
+            !message.classList.contains("error") &&
+            !message.classList.contains("danger")
+        ) {
+            continue;
+        }
+
+        const matchingField = validationFields.find(field =>
+            field.keywords.some(keyword => messageText.includes(keyword))
+        );
+
+        
+        
+if (matchingField) {
+    const targetField = document.getElementById(matchingField.id);
+
+    if (targetField) {
+        // Connect supported fields to their inline error elements.
+        const inlineErrorIds = {
+            "job-description": "job-description-error",
+            "contact-email": "contact-email-error",
+            "contact-phone": "contact-phone-error"
+        };
+
+        const inlineErrorId = inlineErrorIds[matchingField.id];
+
+        if (inlineErrorId) {
+            const inlineError = document.getElementById(inlineErrorId);
+
+            if (inlineError) {
+                // Display the validation message below the field.
+                inlineError.textContent = message.textContent.trim();
+                inlineError.hidden = false;
+
+                // Highlight the field containing the error.
+                targetField.classList.add("field-invalid");
+                targetField.setAttribute("aria-describedby", inlineErrorId);
+                targetField.setAttribute("aria-invalid", "true");
+
+                // Remove the corresponding top notification.
+                const relatedToast = message.closest(".toast-message");
+
+                if (relatedToast) {
+                    relatedToast.remove();
+                }
+            }
+        }
+
+        // Scroll to the field requiring correction.
+        targetField.scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+        });
+
+        targetField.focus({ preventScroll: true });
+    }
+}
+
+            break;
+        }
+
+    
+     });
 </script>
 
 {% endblock %}

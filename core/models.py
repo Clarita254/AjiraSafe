@@ -2,8 +2,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
-
-
+from django.utils import timezone
 # =========================================================
 # EXISTING MODEL: JOB APPLICANT
 # =========================================================
@@ -130,9 +129,10 @@ class JobAdvertisement(models.Model):
 class EmployerVerificationRecord(models.Model):
 
     class VerificationStatus(models.TextChoices):
+        PENDING = "pending", "Pending Verification"
         VERIFIED = "verified", "Verified"
         UNVERIFIED = "unverified", "Unverified"
-        SUSPICIOUS = "suspicious", "Suspicious"
+        REJECTED = "rejected", "Rejected"
 
     verification_id = models.AutoField(primary_key=True)
 
@@ -141,20 +141,33 @@ class EmployerVerificationRecord(models.Model):
         on_delete=models.PROTECT,
         related_name="verification_records"
     )
+
     verified_by = models.ForeignKey(
         SystemAdministrator,
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name="verification_records"
     )
 
     verification_status = models.CharField(
         max_length=20,
         choices=VerificationStatus.choices,
-        default=VerificationStatus.UNVERIFIED
+        default=VerificationStatus.PENDING
     )
-    verification_date = models.DateTimeField()
+
+    verification_date = models.DateTimeField(
+        default=timezone.now
+    )
+
+# Internal administrator notes for the audit trail.
     remarks = models.TextField(blank=True)
 
+# Applicant-facing explanation of the verification decision.
+    applicant_review_summary = models.TextField(
+    blank=True,
+    help_text="A public-facing summary of the employer verification decision."
+)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -164,9 +177,8 @@ class EmployerVerificationRecord(models.Model):
     def __str__(self):
         return (
             f"{self.employer.company_name} - "
-            f"{self.verification_status}"
+            f"{self.get_verification_status_display()}"
         )
-
 
 # =========================================================
 # SUSPICIOUS JOB REPORT

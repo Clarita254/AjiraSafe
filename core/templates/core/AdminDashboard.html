@@ -472,29 +472,367 @@
 
         </section>
 
-        <!-- EMPLOYER VERIFICATION -->
-        <section class="admin-panel" data-admin-panel="employers" hidden>
+   
+<!-- EMPLOYER VERIFICATION -->
+<section class="admin-panel" data-admin-panel="employers" hidden>
 
-            <div class="admin-panel-heading">
-                <p class="admin-eyebrow">EMPLOYER TRUST</p>
-                <h1>Employer verification</h1>
+    <header class="admin-panel-heading employer-verification-heading">
+        <div>
+            <p class="admin-eyebrow">EMPLOYER TRUST</p>
+            <h1>Employer verification</h1>
+            <p>
+                Review each employer’s details and record a clear,
+                evidence-based verification decision.
+            </p>
+        </div>
+        <div class="employer-verification-count" aria-label="Employer records">
+            <span class="employer-count-total">{{ total_employers|default:0 }}</span>
+            <span>employer{{ total_employers|pluralize }} record{{ total_employers|pluralize }}</span>
+        </div>
+    </header>
+
+    <section class="employer-verification-summary"
+             aria-label="Verification queue summary">
+        <div class="verification-summary-card">
+            <span class="verification-summary-icon">▣</span>
+            <div>
+                <span class="verification-summary-label">Total employers</span>
+                <strong>{{ total_employers|default:0 }}</strong>
+            </div>
+        </div>
+        <div class="verification-summary-card needs-review">
+            <span class="verification-summary-icon">◷</span>
+            <div>
+                <span class="verification-summary-label">Awaiting review</span>
+                <strong>{{ pending_employer_verifications|default:0 }}</strong>
+            </div>
+        </div>
+        <p class="verification-summary-tip">
+            Review the organization’s details before saving a decision.
+        </p>
+    </section>
+
+    <div class="employer-verification-filters">
+        <div class="employer-search-field">
+            <label for="employer-search">Search employers</label>
+            <input id="employer-search"
+                   type="search"
+                   placeholder="Company, email, phone or registration number"
+                   autocomplete="off">
+        </div>
+        <div class="employer-status-filter">
+            <label for="employer-status-filter">Verification status</label>
+            <select id="employer-status-filter">
+                <option value="all">All statuses</option>
+                <option value="pending">Pending verification</option>
+                <option value="verified">Verified</option>
+                <option value="unverified">Unverified</option>
+                <option value="rejected">Rejected</option>
+            </select>
+        </div>
+        <p class="employer-filter-count" aria-live="polite">
+            Showing <strong data-employer-visible-count>{{ total_employers|default:0 }}</strong>
+            of {{ total_employers|default:0 }} employers
+        </p>
+    </div>
+
+    <div class="employer-verification-list">
+        {% for employer in employer_list %}
+            <article class="employer-verification-card"
+                     data-employer-card
+                     data-employer-name="{{ employer.company_name|lower }}"
+                     data-employer-email="{{ employer.contact_email|lower }}"
+                     data-employer-phone="{{ employer.contact_phone|lower }}"
+                     data-employer-registration="{{ employer.company_reg_number|lower }}"
+                     data-verification-status="{{ employer.latest_verification_status|default:'pending' }}">
+                <header class="employer-card-header">
+                    <div class="employer-card-identity">
+                        <span class="employer-card-avatar" aria-hidden="true">
+                            {{ employer.company_name|slice:":1"|upper }}
+                        </span>
+                        <div>
+                            <p class="employer-card-label">EMPLOYER</p>
+                            <h2>{{ employer.company_name }}</h2>
+                        </div>
+                    </div>
+
+                    {% if employer.latest_verification_status == "verified" %}
+                        <span class="admin-status-pill success"
+                              data-employer-status-badge
+                              data-initial-status="verified">Verified</span>
+                    {% elif employer.latest_verification_status == "unverified" %}
+                        <span class="admin-status-pill warning"
+                              data-employer-status-badge
+                              data-initial-status="unverified">Unverified</span>
+                    {% elif employer.latest_verification_status == "rejected" %}
+                        <span class="admin-status-pill danger"
+                              data-employer-status-badge
+                              data-initial-status="rejected">Rejected</span>
+                    {% else %}
+                        <span class="admin-status-pill info"
+                              data-employer-status-badge
+                              data-initial-status="pending">Pending verification</span>
+                    {% endif %}
+                </header>
+
+                <div class="employer-card-content">
+                    <section class="employer-details" aria-label="Employer details">
+                        <h3>Organization details</h3>
+                        <dl class="employer-details-grid">
+                            <div class="employer-detail-item">
+                                <dt>Website</dt>
+                                <dd>
+                                    {% if employer.website %}
+                                        <a href="{{ employer.website }}"
+                                           target="_blank"
+                                           rel="noopener noreferrer">
+                                            Visit website <span aria-hidden="true">↗</span>
+                                        </a>
+                                    {% else %}
+                                        <span class="employer-detail-missing">Not provided</span>
+                                    {% endif %}
+                                </dd>
+                            </div>
+                            <div class="employer-detail-item">
+                                <dt>Email address</dt>
+                                <dd>
+                                    {{ employer.contact_email|default:"Not provided" }}
+                                </dd>
+                            </div>
+                            <div class="employer-detail-item">
+                                <dt>Phone number</dt>
+                                <dd>
+                                    {{ employer.contact_phone|default:"Not provided" }}
+                                </dd>
+                            </div>
+                            <div class="employer-detail-item">
+                                <dt>Registration number</dt>
+                                <dd>
+                                    {{ employer.company_reg_number|default:"Not provided" }}
+                                </dd>
+                            </div>
+                        </dl>
+                    </section>
+
+                    <form
+    class="employer-review-form"
+    method="POST"
+    novalidate
+    action="{% url 'employer_verification_action' employer.employer_id %}">
+                        {% csrf_token %}
+                        <h3>Administrator review</h3>
+
+                        <div class="employer-review-fields">
+                            <div class="employer-review-field">
+                                <label for="verification-status-{{ employer.employer_id }}">
+                                    Verification decision
+                                </label>
+                               <select
+    id="verification-status-{{ employer.employer_id }}"
+    name="verification_status"
+    required
+    {% if employer.latest_verification_status == "verified" or employer.latest_verification_status == "unverified" or employer.latest_verification_status == "rejected" %}disabled{% endif %}>
+                                    <option value="pending"
+                                        {% if employer.latest_verification_status == "pending" or not employer.latest_verification_status %}selected{% endif %}>
+                                        Pending verification
+                                    </option>
+                                    <option value="verified"
+                                        {% if employer.latest_verification_status == "verified" %}selected{% endif %}>
+                                        Verified
+                                    </option>
+                                    <option value="unverified"
+                                        {% if employer.latest_verification_status == "unverified" %}selected{% endif %}>
+                                        Unverified
+                                    </option>
+                                    <option value="rejected"
+                                        {% if employer.latest_verification_status == "rejected" %}selected{% endif %}>
+                                        Rejected
+                                    </option>
+                                </select>
+                                <span
+    class="field-error"
+    data-error-for="verification_status"
+    role="alert"
+></span>
+                            </div>
+                            <div class="employer-review-field">
+                                <label for="verification-remarks-{{ employer.employer_id }}">
+                                    Administrator remarks
+                                </label>
+                                <textarea
+                                    id="verification-remarks-{{ employer.employer_id }}"
+                                    name="remarks"
+                                    rows="3"
+                                    placeholder="Summarize the evidence reviewed and explain this decision."
+                                    required
+
+    {% if employer.latest_verification_status == "verified" or employer.latest_verification_status == "unverified" or employer.latest_verification_status == "rejected" %}disabled{% endif %}></textarea>
+                                  <span
+    class="field-error"
+    data-error-for="remarks"
+    role="alert"
+></span> 
+                            </div>
+                       <div class="employer-review-field">
+
+    <label for="verification-summary-{{ employer.employer_id }}">
+        Applicant-facing review summary
+    </label>
+
+    <textarea
+        id="verification-summary-{{ employer.employer_id }}"
+        name="applicant_review_summary"
+        rows="3"
+        maxlength="1000"
+       placeholder="Provide a brief explanation of the verification outcome that applicants can see."
+        required {% if employer.latest_verification_status == "verified" or employer.latest_verification_status == "unverified" or employer.latest_verification_status == "rejected" %}disabled{% endif %}>
+</textarea>
+<span
+    class="field-error"
+    data-error-for="applicant_review_summary"
+    role="alert"
+></span>
+    <small>
+       This explanation will be visible to applicants on the assessment results page.
+        Do not include confidential information.
+    </small>
+
+</div>     
+                        </div>
+<div
+    class="verification-feedback"
+    data-verification-feedback
+    role="status"
+    aria-live="polite"
+></div>
+                        <div class="employer-review-actions">
+                            <span>Remarks are required to keep an audit trail.</span>
+                            <button
+    type="submit"
+    class="employer-save-button"
+    {% if employer.latest_verification_status == "verified" or employer.latest_verification_status == "unverified" or employer.latest_verification_status == "rejected" %}disabled{% endif %}>
+    Save decision
+    <span aria-hidden="true">→</span>
+</button>
+                        </div>
+                    </form>
+
+                    <form
+    class="employer-reopen-form"
+    method="POST"
+    action="{% url 'reopen_employer_verification' employer.employer_id %}"
+    {% if employer.latest_verification_status != "verified" and employer.latest_verification_status != "unverified" and employer.latest_verification_status != "rejected" %}hidden{% endif %}>
+
+    {% csrf_token %}
+
+    <h3>Reopen employer verification</h3>
+
+    <p>
+        This employer has a final verification decision.
+        Reopening will preserve the previous decision in the
+        verification history and create a new pending review.
+    </p>
+
+    <div class="employer-review-field">
+
+        <label for="reopen-reason-{{ employer.employer_id }}">
+            Reason for reopening
+        </label>
+
+       <textarea
+    id="reopen-reason-{{ employer.employer_id }}"
+    name="reason"
+    rows="3"
+    minlength="10"
+    maxlength="1000"
+    placeholder="Explain why this employer's verification needs to be reviewed again."
+    required></textarea>
+
+        <span
+    class="field-error"
+    data-error-for="reason"
+    role="alert"></span>
+
+    </div>
+
+    <div
+        class="verification-feedback"
+        data-reopen-feedback
+        role="status"
+        aria-live="polite">
+    </div>
+
+    <button type="submit" class="employer-save-button">
+        Reopen verification
+        <span aria-hidden="true">→</span>
+    </button>
+
+</form>
+                </div>
+                <details class="employer-history">
+                    <summary>
+                        Previous verification decisions
+                        <span class="employer-history-count">
+                            {{ employer.verification_history|length }}
+                        </span>
+                    </summary>
+                    <div class="employer-history-content">
+                        {% if employer.verification_history %}
+                            <ol class="employer-history-list">
+                                {% for record in employer.verification_history %}
+                                    <li class="employer-history-item">
+                                        <div class="employer-history-meta">
+                                            {% if record.verification_status == "verified" %}
+                                                <span class="admin-status-pill success">Verified</span>
+                                            {% elif record.verification_status == "unverified" %}
+                                                <span class="admin-status-pill warning">Unverified</span>
+                                            {% elif record.verification_status == "rejected" %}
+                                                <span class="admin-status-pill danger">Rejected</span>
+                                            {% else %}
+                                                <span class="admin-status-pill info">Pending verification</span>
+                                            {% endif %}
+                                            <time datetime="{{ record.verification_date|date:'c' }}">
+                                                {{ record.verification_date|date:"M j, Y, P" }}
+                                            </time>
+                                            <span>
+                                                {% if record.verified_by %}
+                                                    {{ record.verified_by.user.get_full_name|default:record.verified_by.user.username }}
+                                                {% else %}
+                                                    Administrator unavailable
+                                                {% endif %}
+                                            </span>
+                                        </div>
+                                        <p>{{ record.remarks|default:"No remarks recorded."|linebreaksbr }}</p>
+                                    </li>
+                                {% endfor %}
+                            </ol>
+                        {% else %}
+                            <p class="employer-history-empty">
+                                No previous verification decisions have been recorded.
+                            </p>
+                        {% endif %}
+                    </div>
+                </details>
+            </article>
+        {% empty %}
+            <div class="employer-verification-empty">
+                <span class="employer-empty-icon" aria-hidden="true">✓</span>
+                <h2>No employers to review</h2>
                 <p>
-                    Review employer information and maintain
-                    verification records.
+                    Employer records will appear here when an employer
+                    submits their information.
                 </p>
             </div>
+        {% endfor %}
+        <div class="employer-verification-empty employer-filter-empty" hidden>
+            <span class="employer-empty-icon" aria-hidden="true">⌕</span>
+            <h2>No matching employers</h2>
+            <p>Try a different search term or verification status.</p>
+        </div>
+    </div>
 
-            <div class="admin-empty-feature">
-                <span class="admin-empty-icon teal">▣</span>
-                <h2>Employer records are not connected yet</h2>
-                <p>
-                    Employer and employer-verification models must be
-                    implemented before this section can display real
-                    records or save verification decisions.
-                </p>
-            </div>
+</section>
 
-        </section>
 
         <!-- USER FEEDBACK & TESTIMONIALS -->
         <section class="admin-panel"
@@ -619,20 +957,21 @@
             </button>
         </form>
 
+        {% if testimonial.status == "approved" %}
+            <button type="button"
+                    class="feedback-action-btn action-undo"
+                    data-undo-toggle="{{ testimonial.id }}"
+                    aria-expanded="false"
+                    aria-controls="undo-form-{{ testimonial.id }}">
+                <span aria-hidden="true">↶</span>
+                Undo Decision
+            </button>
+        {% endif %}
+
     </div>
 
-    <!-- Undo action: separate row -->
+    <!-- Undo action form: shown beneath the action buttons -->
     {% if testimonial.status == "approved" %}
-        <button type="button"
-                class="feedback-action-btn action-undo"
-                data-undo-toggle="{{ testimonial.id }}"
-                aria-expanded="false"
-                aria-controls="undo-form-{{ testimonial.id }}">
-            <span aria-hidden="true">↶</span>
-            Undo Decision
-        </button>
-
-        <!-- Hidden until Undo Decision is clicked -->
         <form method="post"
               action="{% url 'testimonial_action' testimonial.id 'undo' %}"
               id="undo-form-{{ testimonial.id }}"
@@ -777,8 +1116,475 @@ document.addEventListener("DOMContentLoaded", function () {
 
     showAdminPanel("overview");
 
-    document.querySelectorAll(".admin-toast").forEach(function (toast) {
+    const employerCards = Array.from(
+        document.querySelectorAll("[data-employer-card]")
+    );
+    const employerSearch = document.getElementById("employer-search");
+    const employerStatusFilter = document.getElementById(
+        "employer-status-filter"
+    );
+    const employerVisibleCount = document.querySelector(
+        "[data-employer-visible-count]"
+    );
+    const employerFilterEmpty = document.querySelector(
+        ".employer-filter-empty"
+    );
+    const statusPresentation = {
+        pending: { label: "Pending verification", className: "info" },
+        verified: { label: "Verified", className: "success" },
+        unverified: { label: "Unverified", className: "warning" },
+        rejected: { label: "Rejected", className: "danger" }
+    };
 
+    function updateEmployerFilters() {
+        if (!employerSearch || !employerStatusFilter) return;
+
+        const searchTerm = employerSearch.value.trim().toLowerCase();
+        const selectedStatus = employerStatusFilter.value;
+        let visibleCount = 0;
+
+        employerCards.forEach(function (card) {
+            const searchableText = [
+                card.dataset.employerName,
+                card.dataset.employerEmail,
+                card.dataset.employerPhone,
+                card.dataset.employerRegistration
+            ].join(" ");
+            const matchesSearch = searchableText.includes(searchTerm);
+            const matchesStatus = selectedStatus === "all"
+                || card.dataset.verificationStatus === selectedStatus;
+            const visible = matchesSearch && matchesStatus;
+
+            card.hidden = !visible;
+            if (visible) visibleCount += 1;
+        });
+
+        if (employerVisibleCount) {
+            employerVisibleCount.textContent = String(visibleCount);
+        }
+
+        if (employerFilterEmpty) {
+            employerFilterEmpty.hidden = (
+                employerCards.length === 0 || visibleCount > 0
+            );
+        }
+    }
+
+    if (employerSearch) {
+        employerSearch.addEventListener("input", updateEmployerFilters);
+    }
+
+    if (employerStatusFilter) {
+        employerStatusFilter.addEventListener("change", updateEmployerFilters);
+    }
+
+    employerCards.forEach(function (card) {
+        const form = card.querySelector(".employer-review-form");
+        const statusSelect = form && form.querySelector(
+            'select[name="verification_status"]'
+        );
+        const badge = card.querySelector("[data-employer-status-badge]");
+        const reopenForm = card.querySelector(".employer-reopen-form");
+
+const reopenReason = reopenForm
+    ? reopenForm.querySelector('[name="reason"]')
+    : null;
+const reopenButton = reopenForm
+    ? reopenForm.querySelector('button[type="submit"]')
+    : null;
+
+const reopenFeedback = reopenForm
+    ? reopenForm.querySelector("[data-reopen-feedback]")
+    : null;
+        let initialStatus = badge
+            ? badge.dataset.initialStatus
+            : "pending";
+
+        function updateStatusBadge(status, isPreview) {
+            if (!badge) return;
+
+            const presentation = statusPresentation[status]
+                || statusPresentation.pending;
+            badge.classList.remove(
+                "success",
+                "warning",
+                "info",
+                "danger"
+            );
+            badge.classList.add(presentation.className);
+            badge.textContent = presentation.label;
+            badge.title = isPreview
+                ? "Unsaved decision preview"
+                : "Current verification status";
+        }
+        function updateReviewForm(status) {
+            if (!form) return;
+
+            const isFinalDecision = [
+                "verified",
+                "unverified",
+                "rejected"
+            ].includes(status);
+
+            form.querySelectorAll(
+                'select[name="verification_status"], ' +
+                '[name="remarks"], ' +
+                '[name="applicant_review_summary"], ' +
+                'button[type="submit"]'
+            ).forEach(function (field) {
+                field.disabled = isFinalDecision;
+            });
+
+            if (reopenForm) {
+                reopenForm.hidden = !isFinalDecision;
+            }
+        }
+        if (badge) {
+            updateStatusBadge(initialStatus, false);
+        }
+        
+updateReviewForm(initialStatus);
+        if (statusSelect) {
+            statusSelect.addEventListener("change", function () {
+                updateStatusBadge(statusSelect.value, true);
+            });
+        }
+
+        if (form) {
+    form.addEventListener("submit", async function (event) {
+        event.preventDefault();
+
+        const presentation = statusPresentation[
+            statusSelect ? statusSelect.value : initialStatus
+        ] || statusPresentation.pending;
+
+        const companyHeading = card.querySelector(
+            ".employer-card-identity h2"
+        );
+
+        const companyName = companyHeading
+            ? companyHeading.textContent.trim()
+            : "this employer";
+
+        // Ask for confirmation before submitting.
+        if (!confirm(
+    "Save the " + presentation.label.toLowerCase()
+    + " decision for " + companyName + "?"
+)) {
+    if (statusSelect) {
+        statusSelect.value = initialStatus;
+    }
+
+    updateStatusBadge(initialStatus, false);
+    return;
+}
+
+        // Locate the inline error and feedback containers.
+        const errorElements = form.querySelectorAll(
+            "[data-error-for]"
+        );
+
+        const feedback = form.querySelector(
+            "[data-verification-feedback]"
+        );
+
+        // Clear previous validation errors.
+        errorElements.forEach(function (element) {
+            element.textContent = "";
+        });
+
+        if (feedback) {
+            feedback.textContent = "";
+            feedback.className = "verification-feedback";
+        }
+
+        // Clear previous invalid field styling.
+        form.querySelectorAll(".is-invalid").forEach(function (field) {
+            field.classList.remove("is-invalid");
+        });
+
+        const submitButton = form.querySelector(
+            'button[type="submit"]'
+        );
+
+        const originalButtonContent = submitButton.innerHTML;
+
+        submitButton.disabled = true;
+        submitButton.textContent = "Saving...";
+
+        try {
+            const response = await fetch(form.action, {
+                method: "POST",
+                body: new FormData(form),
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest"
+                },
+                credentials: "same-origin"
+            });
+
+            const data = await response.json();
+
+            // Display field-specific validation errors.
+            if (!response.ok || !data.success) {
+
+                if (data.errors) {
+                    Object.entries(data.errors).forEach(
+                        function ([fieldName, errorMessage]) {
+
+                            const errorElement = form.querySelector(
+                                '[data-error-for="' + fieldName + '"]'
+                            );
+
+                            const field = form.querySelector(
+                                '[name="' + fieldName + '"]'
+                            );
+
+                            if (errorElement) {
+                                errorElement.textContent = errorMessage;
+                            }
+
+                            if (field) {
+                                field.classList.add("is-invalid");
+                            }
+
+                            if (fieldName === "general" && feedback) {
+                                feedback.textContent = errorMessage;
+                                feedback.classList.add("error");
+                            }
+                        }
+                    );
+                } else if (feedback) {
+                    feedback.textContent = data.message
+                        || "The verification decision could not be saved.";
+
+                    feedback.classList.add("error");
+                }
+
+                return;
+            }
+
+            // Update the badge only after successful database saving.
+            initialStatus = data.status;
+
+            updateStatusBadge(data.status, false);
+
+            // Update the badge's initial status for future previews.
+            if (badge) {
+                badge.dataset.initialStatus = data.status;
+            }
+// Lock the review form or unlock it based on the saved status.
+updateReviewForm(data.status);
+            // Clear the form fields after successful submission.
+            form.querySelectorAll(
+                '[name="remarks"], [name="applicant_review_summary"]'
+            ).forEach(function (field) {
+                field.value = "";
+            });
+
+            // Display success feedback.
+            if (feedback) {
+                feedback.textContent = data.message;
+                feedback.classList.add("success");
+            }
+
+        } catch (error) {
+            console.error(
+                "Employer verification submission failed:",
+                error
+            );
+
+            if (feedback) {
+                feedback.textContent =
+                    "A connection error occurred. Please try again.";
+
+                feedback.classList.add("error");
+            }
+
+        } finally {
+            submitButton.disabled = false;
+            submitButton.innerHTML = originalButtonContent;
+        }
+    });
+}
+
+
+// REOPEN EMPLOYER VERIFICATION
+if (reopenForm) {
+    reopenForm.addEventListener("submit", async function (event) {
+        event.preventDefault();
+
+        const companyHeading = card.querySelector(
+            ".employer-card-identity h2"
+        );
+
+        const companyName = companyHeading
+            ? companyHeading.textContent.trim()
+            : "this employer";
+
+        const reason = reopenReason
+            ? reopenReason.value.trim()
+            : "";
+
+        // Validate the reopening reason.
+        if (reason.length < 10) {
+            if (reopenFeedback) {
+                reopenFeedback.textContent =
+                    "Please provide a reason of at least 10 characters.";
+                reopenFeedback.classList.remove("success");
+                reopenFeedback.classList.add("error");
+            }
+
+            if (reopenReason) {
+                reopenReason.classList.add("is-invalid");
+            }
+
+            return;
+        }
+
+        // Confirm before reopening.
+        if (!confirm(
+            "Reopen verification for " + companyName
+            + "? The current decision will remain in the history."
+        )) {
+            return;
+        }
+
+        // Clear previous errors and feedback.
+        if (reopenFeedback) {
+            reopenFeedback.textContent = "";
+            reopenFeedback.classList.remove("success", "error");
+        }
+
+        if (reopenReason) {
+            reopenReason.classList.remove("is-invalid");
+        }
+const errorElement = reopenForm.querySelector(
+    '[data-error-for="reason"]'
+);
+        if (errorElement) {
+            errorElement.textContent = "";
+        }
+
+        const originalButtonContent = reopenButton
+            ? reopenButton.innerHTML
+            : "";
+
+        try {
+            if (reopenButton) {
+                reopenButton.disabled = true;
+                reopenButton.textContent = "Reopening...";
+            }
+
+            const response = await fetch(reopenForm.action, {
+                method: "POST",
+                body: new FormData(reopenForm),
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest"
+                },
+                credentials: "same-origin"
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+
+                // Display validation errors returned by Django.
+                if (data.errors) {
+                    Object.entries(data.errors).forEach(
+                        function ([fieldName, messages]) {
+                            const message = Array.isArray(messages)
+                                ? messages.join(" ")
+                                : messages;
+
+                            const fieldError = reopenForm.querySelector(
+                                '[data-error-for="' + fieldName + '"]'
+                            );
+
+                            const field = reopenForm.querySelector(
+                                '[name="' + fieldName + '"]'
+                            );
+
+                            if (fieldError) {
+                                fieldError.textContent = message;
+                            }
+
+                            if (field) {
+                                field.classList.add("is-invalid");
+                            }
+                        }
+                    );
+                }
+
+                if (reopenFeedback) {
+                    reopenFeedback.textContent = data.message
+                        || "The verification could not be reopened.";
+
+                    reopenFeedback.classList.remove("success");
+                    reopenFeedback.classList.add("error");
+                }
+
+                return;
+            }
+
+            // Update the employer status to Pending Verification.
+            initialStatus = data.status;
+
+            updateStatusBadge(data.status, false);
+
+            if (badge) {
+                badge.dataset.initialStatus = data.status;
+            }
+
+            if (statusSelect) {
+                statusSelect.value = data.status;
+            }
+
+            // Unlock the review form and hide the reopening form.
+            updateReviewForm(data.status);
+
+            // Display success feedback.
+            if (reopenFeedback) {
+                reopenFeedback.textContent = data.message
+                    || "Verification reopened successfully.";
+
+                reopenFeedback.classList.remove("error");
+                reopenFeedback.classList.add("success");
+            }
+
+            // Reload to display the newly created verification history.
+            window.setTimeout(function () {
+                window.location.reload();
+            }, 1000);
+
+        } catch (error) {
+            console.error(
+                "Employer verification reopening failed:",
+                error
+            );
+
+            if (reopenFeedback) {
+                reopenFeedback.textContent =
+                    "A connection error occurred. Please try again.";
+
+                reopenFeedback.classList.remove("success");
+                reopenFeedback.classList.add("error");
+            }
+
+                       } finally {
+            if (reopenButton) {
+                reopenButton.disabled = false;
+                reopenButton.innerHTML = originalButtonContent;
+            }
+        }
+    });
+}
+
+// Close employerCards.forEach
+});
+
+updateEmployerFilters();
+
+document.querySelectorAll(".admin-toast").forEach(function (toast) {
         const closeButton = toast.querySelector(".admin-toast-close");
         let dismissed = false;
 

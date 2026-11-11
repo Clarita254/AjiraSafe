@@ -26,6 +26,17 @@ urlpatterns = [
    ),
    path("admin-dashboard/", views.admin_dashboard, name="admin_dashboard"),
 
+path(
+    "administrator/employers/<int:employer_id>/verify/",
+    views.employer_verification_action,
+    name="employer_verification_action",
+),
+
+path(
+    "administrator/employers/<int:employer_id>/reopen/",
+    views.reopen_employer_verification,
+    name="reopen_employer_verification",
+),
 
 path(
     "administrator/assessment-results/<int:result_id>/lime/",

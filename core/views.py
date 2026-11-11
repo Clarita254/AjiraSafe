@@ -1,3 +1,5 @@
+from unittest import result
+
 from django.shortcuts import render, redirect
 
 from django.contrib.auth.models import User, Group
@@ -11,17 +13,16 @@ from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 
 from django.contrib.auth.decorators import login_required
-
-from django.http import HttpResponseForbidden, request
-
+from django.http import HttpResponseForbidden, JsonResponse
 from django.urls import reverse
 from django.db import transaction
 from django.utils import timezone
 from django.views.csrf import csrf_failure as django_csrf_failure
 
 from django.views.decorators.cache import never_cache
-
+from django.db.models import OuterRef, Prefetch, Subquery, Q
 from core.models import TestimonialDecisionLog
+from django.db.models import Prefetch
 from .models import (
     Testimonial,
     JobApplicant,
@@ -39,7 +40,11 @@ from .models import (
 
 from django.shortcuts import get_object_or_404
 from django.views.decorators.http import require_POST
-
+from .validators import (
+    validate_job_assessment_data,
+    validate_employer_data,
+    validate_employer_verification_data,
+)
 import re
 import json
 import math
@@ -730,11 +735,6 @@ def login_view(request):
         ""
     )
 
-    remember_me = (
-        request.POST.get("remember_me") == "on"
-    )
-
-
     # =====================================================
     # VALIDATE REQUIRED FIELDS
     # =====================================================
@@ -750,7 +750,6 @@ def login_view(request):
             "core/login.html",
             {
                 "email_required": True,
-                "remember_me": remember_me,
             }
         )
 
@@ -763,7 +762,6 @@ def login_view(request):
             {
                 "password_required": True,
                 "email": email,
-                "remember_me": remember_me,
             }
         )
 
@@ -806,7 +804,6 @@ def login_view(request):
             "core/login.html",
             {
                 "invalid_credentials": True,
-                "remember_me": remember_me,
             }
         )
 
@@ -836,7 +833,6 @@ def login_view(request):
             "core/login.html",
             {
                 "invalid_credentials": True,
-                "remember_me": remember_me,
             }
         )
 
@@ -851,26 +847,8 @@ def login_view(request):
     )
 
 
-    # =====================================================
-    # KEEP ME SIGNED IN
-    # =====================================================
-
-    if remember_me:
-
-        # Keep the Django authentication session active
-        # for 14 days.
-        #
-        # This does NOT store the user's password.
-
-        request.session.set_expiry(
-            60 * 60 * 24 * 14
-        )
-
-    else:
-
-        # Session expires when the browser session ends.
-
-        request.session.set_expiry(0)
+    # Keep authentication limited to the current browser session.
+    request.session.set_expiry(0)
 
 
     # =====================================================
@@ -999,8 +977,18 @@ def dashboard(request):
                 )
                 return redirect("dashboard")
 
-    # Display the latest assessment result only on the Assess Job tab.
-    active_tab = request.GET.get("tab", "overview")
+    # Display assessment submissions and their validation errors on the form.
+    is_assessment_submission = (
+        request.method == "POST" and "assessment_submit" in request.POST
+    )
+    active_tab = (
+        "assess-job"
+        if is_assessment_submission
+        else request.GET.get("tab", "overview")
+    )
+    assessment_form_data = (
+        request.POST if is_assessment_submission else {}
+    )
     assessment_result = None
 
     if active_tab == "assess-job":
@@ -1009,12 +997,24 @@ def dashboard(request):
         )
 
     # Handle job assessment submissions.
-    if request.method == "POST" and "assessment_submit" in request.POST:
+    if is_assessment_submission:
+
+        # Job advertisement details.
         title = request.POST.get("title", "").strip()
         company_name = request.POST.get("company_name", "").strip()
         location = request.POST.get("location", "").strip()
         job_url = request.POST.get("job_url", "").strip()
         description = request.POST.get("description", "").strip()
+        telecommuting = request.POST.get("telecommuting", "").strip().lower() == "yes"
+        has_company_logo = request.POST.get("has_company_logo", "").strip().lower() == "yes"
+        has_questions = request.POST.get("has_questions", "").strip().lower() == "yes"  
+        # Employer information for independent verification.
+        employer_website = request.POST.get("website", "").strip()
+        company_reg_number = request.POST.get(
+            "company_reg_number", ""
+        ).strip()
+        contact_email = request.POST.get("contact_email", "").strip()
+        contact_phone = request.POST.get("contact_phone", "").strip()
 
         # Additional structured job fields.
         salary_range = request.POST.get("salary_range", "").strip()
@@ -1038,21 +1038,45 @@ def dashboard(request):
 
         else:
             try:
-                # Validate the supplied job URL.
-                website = ""
+                # Validate job advertisement details and retrieve cleaned values.
+                validated_data = validate_job_assessment_data(request.POST)
+                # Validate employer information separately.
+                validated_employer_data = validate_employer_data(request.POST)
 
-                if job_url:
-                    parsed_url = urlparse(job_url)
+# Use the cleaned employer information.
+                employer_website = validated_employer_data["website"]
+                company_reg_number = validated_employer_data["company_reg_number"]
+                contact_email = validated_employer_data["contact_email"]
+                contact_phone = validated_employer_data["contact_phone"]
+                title = validated_data["title"]
+                company_name = validated_data["company_name"]
+                location = validated_data["location"]
+                job_url = validated_data["job_url"]
+                description = validated_data["description"]
+
+                telecommuting = validated_data["telecommuting"]
+                has_company_logo = validated_data["has_company_logo"]
+                has_questions = validated_data["has_questions"]
+
+                salary_range = validated_data["salary_range"]
+                employment_type = validated_data["employment_type"]
+                required_experience = validated_data["required_experience"]
+                required_education = validated_data["required_education"]
+                industry = validated_data["industry"]
+                department = validated_data["department"]
+                job_function = validated_data["function"]
+
+                # Validate the employer's official website separately.
+                if employer_website:
+                    parsed_employer_url = urlparse(employer_website)
 
                     if (
-                        parsed_url.scheme not in ("http", "https")
-                        or not parsed_url.hostname
+                        parsed_employer_url.scheme not in ("http", "https")
+                        or not parsed_employer_url.hostname
                     ):
                         raise ValueError(
-                            "Please enter a valid job URL."
+                            "Please enter a valid employer website URL."
                         )
-
-                    website = job_url
 
                 # Prepare the job data for the machine-learning model.
                 job_data = {
@@ -1064,9 +1088,9 @@ def dashboard(request):
                     "benefits": "",
                     "department": department,
                     "salary_range": salary_range,
-                    "telecommuting": False,
-                    "has_company_logo": False,
-                    "has_questions": False,
+                    "telecommuting": telecommuting,
+                    "has_company_logo": has_company_logo,
+                    "has_questions": has_questions,
                     "employment_type": employment_type,
                     "required_experience": required_experience,
                     "required_education": required_education,
@@ -1166,18 +1190,60 @@ def dashboard(request):
 
                 # Save the assessment and related records together.
                 with transaction.atomic():
-                    employer = Employer.objects.filter(
-                        company_name__iexact=company_name,
-                        website=website,
-                    ).first()
+                             # Retrieve an existing employer or create a new employer.
+                    employer = None
 
+                    # First, check using the company registration number.
+                    if company_reg_number:
+                        employer = Employer.objects.filter(
+                            company_name__iexact=company_name,
+                            company_reg_number__iexact=company_reg_number,
+                        ).first()
+
+                    # If no match is found, check using the employer's official website.
+                    if employer is None and employer_website:
+                        employer = Employer.objects.filter(
+                            company_name__iexact=company_name,
+                            website__iexact=employer_website,
+                        ).first()
+
+                    # If no website was supplied, check for an existing record
+                    # with the same company name and no recorded website.
+                    if employer is None and not employer_website:
+                        employer = Employer.objects.filter(
+                            company_name__iexact=company_name,
+                            website="",
+                        ).first()
+
+                    # Create a new employer if no existing record matches.
                     if employer is None:
                         employer = Employer.objects.create(
                             company_name=company_name,
-                            website=website,
+                            website=employer_website,
+                            company_reg_number=company_reg_number,
+                            contact_email=contact_email,
+                            contact_phone=contact_phone,
                             email_domain=None,
                         )
 
+                    # Check whether this employer already has verification history.
+                    latest_verification = (
+                        employer.verification_records.order_by(
+                            "-verification_date",
+                            "-created_at",
+                        ).first()
+                    )
+
+                    # Only create a Pending Verification record if no history exists.
+                    if latest_verification is None:
+                        EmployerVerificationRecord.objects.create(
+                            employer=employer,
+                            verified_by=None,
+                            verification_status=(
+                                EmployerVerificationRecord.VerificationStatus.PENDING
+                            ),
+                            remarks="Awaiting administrator verification.",
+                        )
                     job_status = (
                         JobAdvertisement.Status.FLAGGED
                         if prediction == "fraudulent"
@@ -1195,9 +1261,9 @@ def dashboard(request):
                         company_profile="",
                         requirements="",
                         benefits="",
-                        telecommuting=False,
-                        has_company_logo=False,
-                        has_questions=False,
+                        telecommuting=telecommuting,
+                        has_company_logo=has_company_logo,
+                        has_questions=has_questions,
                         employment_type=employment_type,
                         required_experience=required_experience,
                         required_education=required_education,
@@ -1254,7 +1320,14 @@ def dashboard(request):
                         "fraud_probability": fraud_probability_percent,
                         "risk_score": float(risk_score),
                         "risk_level": risk_level,
-                        "employer_verification": "Not verified",
+                "employer_verification": (
+    job.employer.verification_records
+    .order_by("-verification_date", "-created_at")
+    .first()
+    .get_verification_status_display()
+    if job.employer.verification_records.exists()
+    else "Pending Verification"
+),
                         "explanation": explanation_text,
                         "text_lime_features": (
                             text_lime_data.get("features", [])
@@ -1294,7 +1367,8 @@ def dashboard(request):
                     "The registered AjiraSafe model version was not "
                     "found. Please check the MLModel record."
                 )
-
+            except ValidationError as exc:
+                messages.error(request, " ".join(exc.messages))
             except ValueError as exc:
                 messages.error(request, str(exc))
 
@@ -1371,10 +1445,9 @@ def dashboard(request):
     ).count()
 
     # Preserve all required dashboard context variables.
-    active_tab = request.GET.get("tab", "overview")
-
     context = {
         "active_tab": active_tab,
+        "assessment_form_data": assessment_form_data,
         "jobs_analyzed": jobs_analyzed,
         "high_risk_count": high_risk_count,
         "reports_count": reports_count,
@@ -1620,6 +1693,49 @@ def assessment_results(request, result_id):
         "The risk level could not be determined. "
         "Please independently verify the employer."
     )
+     # Retrieve the latest employer verification decision and administrator details.
+    latest_verification = (
+        result.job.employer.verification_records
+        .select_related("verified_by__user")
+        .order_by("-verification_date", "-created_at")
+        .first()
+    )
+
+    # Display the actual database verification status.
+    employer_verification = (
+        latest_verification.get_verification_status_display()
+        if latest_verification
+        else "Pending Verification"
+    )
+
+    employer_verification_status = (
+        latest_verification.verification_status
+        if latest_verification
+        else EmployerVerificationRecord.VerificationStatus.PENDING
+    )
+
+    # Retrieve the applicant-facing verification summary.
+    employer_review_summary = (
+        latest_verification.applicant_review_summary
+        if latest_verification and latest_verification.applicant_review_summary
+        else "No applicant-facing review summary was provided for this decision."
+    )
+
+    # Retrieve the verification decision date.
+    employer_verification_date = (
+        latest_verification.verification_date
+        if latest_verification
+        else None
+    )
+
+    # Retrieve the administrator who made the decision.
+    employer_verification_administrator = None
+
+    if latest_verification and latest_verification.verified_by:
+        admin_user = latest_verification.verified_by.user
+        employer_verification_administrator = (
+            admin_user.get_full_name() or admin_user.username
+        )
 
     # Prepare the template context.
     context = {
@@ -1632,19 +1748,18 @@ def assessment_results(request, result_id):
         "fraud_probability_percent": probability_percent,
         "risk_level_display": risk_level_display,
         "risk_interpretation": risk_interpretation,
-
-        # Employer verification is separate from the model prediction.
-        "employer_verification": "Not verified",
+        "employer_verification": employer_verification,
+        "employer_verification_status": employer_verification_status,
+        "employer_review_summary": employer_review_summary,
+        "employer_verification_date": employer_verification_date,
+        "employer_verification_administrator": employer_verification_administrator,
     }
+
     return render(
         request,
         "core/assessment_results.html",
         context,
     )
-
-
-
-
 @login_required(login_url="login")
 @never_cache
 def admin_lime_explanation(request, result_id):
@@ -1805,13 +1920,46 @@ def admin_dashboard(request):
         status=SuspiciousJobReport.Status.PENDING
     ).count()
 
-    # Employer verification statistics.
+       # Employer verification statistics.
     total_employers = Employer.objects.count()
 
-    pending_employer_verifications = Employer.objects.filter(
-        verification_records__isnull=True
-    ).distinct().count()
+    latest_verification_status = (
+        EmployerVerificationRecord.objects.filter(
+            employer=OuterRef("pk")
+        )
+        .order_by("-verification_date", "-created_at")
+        .values("verification_status")[:1]
+    )
 
+    employers_with_latest_status = Employer.objects.annotate(
+        latest_verification_status=Subquery(
+            latest_verification_status
+        )
+    )
+
+    pending_employer_verifications = employers_with_latest_status.filter(
+        Q(
+            latest_verification_status=
+            EmployerVerificationRecord.VerificationStatus.PENDING
+        )
+        | Q(latest_verification_status__isnull=True)
+    ).count()
+    # All employers with their latest verification status.
+    employer_list = (
+        employers_with_latest_status
+        .prefetch_related(
+            Prefetch(
+                "verification_records",
+                queryset=(
+                    EmployerVerificationRecord.objects
+                    .select_related("verified_by__user")
+                    .order_by("-verification_date", "-created_at")
+                ),
+                to_attr="verification_history",
+            )
+        )
+        .order_by("company_name")
+    )
     # Feedback and testimonials now use one model.
     total_feedback = Testimonial.objects.count()
 
@@ -1854,11 +2002,12 @@ def admin_dashboard(request):
             "verified_by__user",
         ).order_by("-verification_date")[:5]
     )
+         # Recent job analysis results.
     recent_analysis_results = (
-            AnalysisResult.objects
-            .select_related("job", "job__employer", "model")
-            .order_by("-analysis_date")[:10]
-        )
+        AnalysisResult.objects
+        .select_related("job", "job__employer", "model")
+        .order_by("-analysis_date")[:10]
+    )
     # Dashboard context.
     context = {
         "total_users": total_users,
@@ -1870,12 +2019,11 @@ def admin_dashboard(request):
 
         "total_reports": total_reports,
         "pending_reports": pending_reports,
-
         "total_employers": total_employers,
         "pending_employer_verifications": (
             pending_employer_verifications
         ),
-
+        "employer_list": employer_list,
         "total_feedback": total_feedback,
         "pending_feedback": pending_feedback,
 
@@ -1899,13 +2047,261 @@ def admin_dashboard(request):
         context,
     )
 
+@login_required(login_url="login")
+@require_POST
+@never_cache
+def employer_verification_action(request, employer_id):
+
+    # Only System Administrators may review employers.
+    if not request.user.groups.filter(
+        name="System Administrator"
+    ).exists():
+        return JsonResponse(
+            {
+                "success": False,
+                "message": "You are not authorized to perform this action."
+            },
+            status=403
+        )
+
+    # Confirm that the logged-in administrator has a profile.
+    administrator = SystemAdministrator.objects.filter(
+        user=request.user
+    ).first()
+
+    if administrator is None:
+        return JsonResponse(
+            {
+                "success": False,
+                "message": "Your administrator profile could not be found."
+            },
+            status=403
+        )
+
+    # Retrieve the employer being reviewed.
+    employer = get_object_or_404(
+        Employer,
+        employer_id=employer_id
+    )
+
+    # Validate the administrator's submitted verification decision.
+    valid_statuses = dict(
+        EmployerVerificationRecord.VerificationStatus.choices
+    )
+
+    try:
+        validated_data = validate_employer_verification_data(
+            request.POST,
+            valid_statuses
+        )
+
+    except ValidationError as error:
+
+        # Convert validation errors into field-specific messages.
+        errors = {}
+
+        for message in error.messages:
+
+            if message.startswith("Administrator remarks"):
+                errors["remarks"] = message
+
+            elif message.startswith("Applicant-facing review summary"):
+                errors["applicant_review_summary"] = message
+
+            elif message.startswith("Please select a valid employer verification status"):
+                errors["verification_status"] = message
+
+            else:
+                errors["general"] = message
+
+        return JsonResponse(
+            {
+                "success": False,
+                "errors": errors
+            },
+            status=400
+        )
+
+    # Retrieve the cleaned and validated values.
+    new_status = validated_data["verification_status"]
+    remarks = validated_data["remarks"]
+    applicant_review_summary = validated_data["applicant_review_summary"]
+
+      # Create a new record while preventing changes to an already-final decision.
+    with transaction.atomic():
+
+        # Lock the employer record to prevent simultaneous verification submissions.
+        locked_employer = Employer.objects.select_for_update().get(
+            employer_id=employer.employer_id
+        )
+
+        # Retrieve the most recent verification decision.
+        latest_verification = (
+            EmployerVerificationRecord.objects.filter(
+                employer=locked_employer
+            )
+            .order_by("-verification_date", "-created_at")
+            .first()
+        )
+
+        # Prevent another decision if the employer has already been reviewed.
+        if (
+            latest_verification
+            and latest_verification.verification_status
+            != EmployerVerificationRecord.VerificationStatus.PENDING
+        ):
+            return JsonResponse(
+                {
+                    "success": False,
+                    "locked": True,
+                    "message": (
+                        "This employer already has a final verification decision. "
+                        "Reopen verification before submitting another decision."
+                    )
+                },
+                status=409
+            )
+
+        # Create a new record to preserve verification history.
+        EmployerVerificationRecord.objects.create(
+            employer=locked_employer,
+            verified_by=administrator,
+            verification_status=new_status,
+            verification_date=timezone.now(),
+            remarks=remarks,
+            applicant_review_summary=applicant_review_summary,
+        )
+
+    # Return a success response without redirecting.
+    return JsonResponse(
+        {
+            "success": True,
+            "message": (
+                f"Verification status for {employer.company_name} "
+                "has been updated successfully."
+            ),
+            "status": new_status,
+            "status_label": valid_statuses[new_status],
+        }
+    )
+
+
+ 
+@login_required(login_url="login")
+@require_POST
+@never_cache
+def reopen_employer_verification(request, employer_id):
+
+    # Only System Administrators may reopen employer verification.
+    if not request.user.groups.filter(
+        name="System Administrator"
+    ).exists():
+        return JsonResponse(
+            {
+                "success": False,
+                "message": "You are not authorized to perform this action."
+            },
+            status=403
+        )
+
+    # Confirm that the administrator has a profile.
+    administrator = SystemAdministrator.objects.filter(
+        user=request.user
+    ).first()
+
+    if administrator is None:
+        return JsonResponse(
+            {
+                "success": False,
+                "message": "Your administrator profile could not be found."
+            },
+            status=403
+        )
+
+    # Retrieve the employer.
+    employer = get_object_or_404(
+        Employer,
+        employer_id=employer_id
+    )
+
+    # Retrieve and validate the reopening reason.
+    reopening_reason = request.POST.get("reason", "").strip()
+
+    if len(reopening_reason) < 10:
+        return JsonResponse(
+            {
+                "success": False,
+                "errors": {
+                    "reason": (
+                        "Please provide a reopening reason of at least "
+                        "10 characters."
+                    )
+                }
+            },
+            status=400
+        )
+
+    # Reopen verification while preserving the previous decision.
+    with transaction.atomic():
+
+        locked_employer = Employer.objects.select_for_update().get(
+            employer_id=employer.employer_id
+        )
+
+        latest_verification = (
+            EmployerVerificationRecord.objects.filter(
+                employer=locked_employer
+            )
+            .order_by("-verification_date", "-created_at")
+            .first()
+        )
+
+        # Only final decisions can be reopened.
+        if (
+            latest_verification is None
+            or latest_verification.verification_status
+            == EmployerVerificationRecord.VerificationStatus.PENDING
+        ):
+            return JsonResponse(
+                {
+                    "success": False,
+                    "message": (
+                        "This employer does not currently have a final "
+                        "verification decision to reopen."
+                    )
+                },
+                status=409
+            )
+
+        # Create a new pending record; do not alter previous records.
+        EmployerVerificationRecord.objects.create(
+            employer=locked_employer,
+            verified_by=administrator,
+            verification_status=(
+                EmployerVerificationRecord.VerificationStatus.PENDING
+            ),
+            verification_date=timezone.now(),
+            remarks=f"Verification reopened. Reason: {reopening_reason}",
+            applicant_review_summary="",
+        )
+
+    return JsonResponse(
+        {
+            "success": True,
+            "message": (
+                f"Verification for {employer.company_name} "
+                "has been reopened successfully."
+            ),
+            "status": "pending",
+            "status_label": "Pending Verification",
+        }
+    )
+  
 # =========================================================
 # REVIEW, APPROVE AND REJECT USER FEEDBACK
-# =========================================================
+# ========================================================
 
-# =========================================================
-# REVIEW, APPROVE, KEEP PRIVATE AND UNDO FEEDBACK DECISIONS
-# =========================================================
+
 
 @login_required(login_url="login")
 @require_POST
