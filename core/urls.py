@@ -31,12 +31,18 @@ path(
     views.employer_verification_action,
     name="employer_verification_action",
 ),
+    path(
+        "administrator/reports/<int:report_id>/update/",
+        views.suspicious_job_report_action,
+        name="suspicious_job_report_action",
+    ),
 
 path(
     "administrator/employers/<int:employer_id>/reopen/",
     views.reopen_employer_verification,
     name="reopen_employer_verification",
 ),
+
 
 path(
     "administrator/assessment-results/<int:result_id>/lime/",
@@ -50,4 +56,16 @@ path(
     name="assessment_results",
 ),
    path("logout/", views.logout_view, name="logout"),
+
+   path(
+    "administrator/reports/<int:report_id>/evidence/",
+    views.suspicious_job_report_evidence,
+    name="suspicious_job_report_evidence",
+),
+
+path(
+    "administrator/users/<int:user_id>/manage/",
+    views.manage_user_account,
+    name="manage_user_account"
+),
 ]

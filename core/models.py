@@ -3,6 +3,8 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
+
+
 # =========================================================
 # EXISTING MODEL: JOB APPLICANT
 # =========================================================
@@ -184,21 +186,27 @@ class EmployerVerificationRecord(models.Model):
 # SUSPICIOUS JOB REPORT
 # =========================================================
 
-class SuspiciousJobReport(models.Model):
 
+class SuspiciousJobReport(models.Model):
     class Status(models.TextChoices):
         PENDING = "pending", "Pending"
-        REVIEWED = "reviewed", "Reviewed"
-        ACTION_TAKEN = "action_taken", "Action Taken"
-        DISMISSED = "dismissed", "Dismissed"
+        UNDER_REVIEW = "under_review", "Under Review"
+        RESOLVED = "resolved", "Resolved"
 
     report_id = models.AutoField(primary_key=True)
 
     job = models.ForeignKey(
         JobAdvertisement,
         on_delete=models.PROTECT,
-        related_name="suspicious_reports"
+        related_name="suspicious_reports",
+        null=True,
+        blank=True
     )
+
+    job_title = models.CharField(max_length=255, blank=True, default="")
+    company_name = models.CharField(max_length=255, blank=True, default="")
+    job_url = models.URLField(max_length=500, blank=True)
+
     applicant = models.ForeignKey(
         JobApplicant,
         on_delete=models.PROTECT,
@@ -207,6 +215,11 @@ class SuspiciousJobReport(models.Model):
 
     reason = models.CharField(max_length=255)
     description = models.TextField(blank=True)
+    evidence = models.FileField(
+        upload_to="suspicious_reports/",
+        null=True,
+        blank=True
+    )
     report_date = models.DateTimeField(auto_now_add=True)
 
     status = models.CharField(
@@ -222,6 +235,7 @@ class SuspiciousJobReport(models.Model):
         blank=True,
         related_name="reviewed_suspicious_reports"
     )
+
     reviewed_at = models.DateTimeField(null=True, blank=True)
     admin_comment = models.TextField(blank=True)
 
@@ -230,9 +244,6 @@ class SuspiciousJobReport(models.Model):
 
     def __str__(self):
         return f"Report #{self.report_id} - {self.status}"
-
-
-
 
 # =========================================================
 # MACHINE LEARNING MODEL METADATA
@@ -493,3 +504,48 @@ class TestimonialDecisionLog(models.Model):
             f"Feedback #{self.testimonial_id} - "
             f"{self.action} - {self.created_at}"
         )
+
+
+        # =========================================================
+# USER ACCOUNT FLAG
+# =========================================================
+
+class UserAccountFlag(models.Model):
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name="account_flag"
+    )
+
+    is_flagged = models.BooleanField(default=False)
+
+    reason = models.TextField(blank=True)
+
+    flagged_by = models.ForeignKey(
+        SystemAdministrator,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="user_flags_created"
+    )
+
+    flagged_at = models.DateTimeField(null=True, blank=True)
+
+    cleared_by = models.ForeignKey(
+        SystemAdministrator,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="user_flags_cleared"
+    )
+
+    cleared_at = models.DateTimeField(null=True, blank=True)
+
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-updated_at"]
+
+    def __str__(self):
+        status = "Flagged" if self.is_flagged else "Not flagged"
+        return f"{self.user.username} - {status}"

@@ -13,7 +13,12 @@ from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseForbidden, JsonResponse
+from django.http import (
+    HttpResponseForbidden,
+    JsonResponse,
+    FileResponse,
+    Http404,
+)
 from django.urls import reverse
 from django.db import transaction
 from django.utils import timezone
@@ -27,19 +32,20 @@ from .models import (
     Testimonial,
     JobApplicant,
     SystemAdministrator,
+    UserAccountFlag,
     Employer,
     JobAdvertisement,
     EmployerVerificationRecord,
     SuspiciousJobReport,
-    
     MLModel,
     AnalysisResult,
     RiskAssessment,
     Explanation,
 )
+from django.core.paginator import Paginator
 
 from django.shortcuts import get_object_or_404
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_GET
 from .validators import (
     validate_job_assessment_data,
     validate_employer_data,
@@ -66,9 +72,12 @@ logger = logging.getLogger(__name__)
 
 def home(request):
 
-    testimonials = Testimonial.objects.filter(
-        is_approved=True
-    ).select_related("user")
+    testimonials = (
+        Testimonial.objects
+        .filter(is_approved=True)
+        .select_related("user")
+        .order_by("-created_at", "-id")[:3]
+    )
 
     testimonial_data = []
 
@@ -932,6 +941,182 @@ def dashboard(request):
     except JobApplicant.DoesNotExist:
         messages.error(request, "Your applicant profile could not be found.")
         return redirect("home")
+    
+    # Handle suspicious job report submissions.
+    if request.method == "POST" and "suspicious_report_submit" in request.POST:
+
+        job_title = request.POST.get("job_title", "").strip()
+        company_name = request.POST.get("company_name", "").strip()
+        job_url = request.POST.get("job_url", "").strip()
+        reason = request.POST.get("reason", "").strip()
+        description = request.POST.get("description", "").strip()
+        job_id = request.POST.get("job_id", "").strip()
+
+        # Retrieve optional supporting evidence.
+        evidence = request.FILES.get("evidence")
+
+        # Accepted report reasons.
+        valid_reasons = {
+            "payment_request",
+            "personal_information",
+            "fake_employer",
+            "misleading_offer",
+            "suspicious_contact",
+            "other",
+        }
+
+        # Validate optional supporting evidence.
+        allowed_extensions = {
+            ".jpg": "jpeg",
+            ".jpeg": "jpeg",
+            ".png": "png",
+            ".pdf": "pdf",
+        }
+
+        evidence_error = None
+
+        if evidence:
+            filename = evidence.name.lower()
+            extension = (
+                "." + filename.rsplit(".", 1)[-1]
+                if "." in filename
+                else ""
+            )
+
+            if evidence.size > 5 * 1024 * 1024:
+                evidence_error = (
+                    "Supporting evidence must not exceed 5 MB."
+                )
+
+            elif extension not in allowed_extensions:
+                evidence_error = (
+                    "Only JPG, JPEG, PNG and PDF files are allowed."
+                )
+
+            else:
+                file_signature = evidence.read(8)
+                evidence.seek(0)
+
+                valid_signatures = {
+                    "jpeg": file_signature.startswith(b"\xff\xd8\xff"),
+                    "png": file_signature.startswith(
+                        b"\x89PNG\r\n\x1a\n"
+                    ),
+                    "pdf": file_signature.startswith(b"%PDF-"),
+                }
+
+                expected_type = allowed_extensions[extension]
+
+                if not valid_signatures[expected_type]:
+                    evidence_error = (
+                        "The uploaded file does not match its file extension."
+                    )
+
+        # Validate report information.
+        if evidence_error:
+            messages.error(request, evidence_error)
+
+        elif not job_title or not company_name:
+            messages.error(
+                request,
+                "Please provide both the job title and company name."
+            )
+
+        elif len(job_title) > 255 or len(company_name) > 255:
+            messages.error(
+                request,
+                "The job title and company name must not exceed 255 characters."
+            )
+
+        elif reason not in valid_reasons:
+            messages.error(
+                request,
+                "Please select a valid reason for reporting this advertisement."
+            )
+
+        elif not description:
+            messages.error(
+                request,
+                "Please explain why you believe this job advertisement is suspicious."
+            )
+
+        elif len(job_url) > 500:
+            messages.error(
+                request,
+                "The job advertisement URL must not exceed 500 characters."
+            )
+
+        else:
+            # Validate the optional advertisement URL.
+            valid_url = True
+
+            if job_url:
+                parsed_url = urlparse(job_url)
+
+                if (
+                    parsed_url.scheme not in ("http", "https")
+                    or not parsed_url.hostname
+                ):
+                    valid_url = False
+
+            if not valid_url:
+                messages.error(
+                    request,
+                    "Please enter a valid job advertisement URL beginning with http:// or https://."
+                )
+
+            else:
+                # Link to an existing AjiraSafe advertisement if supplied.
+                linked_job = None
+
+                if job_id:
+                    linked_job = (
+                        JobAdvertisement.objects
+                        .select_related("employer")
+                        .filter(
+                            job_id=job_id,
+                            applicant=applicant
+                        )
+                        .first()
+                    )
+
+                    if linked_job is None:
+                        messages.error(
+                            request,
+                            "The selected AjiraSafe advertisement could not be found."
+                        )
+
+                # Save the report when the advertisement details are valid.
+                if not job_id or linked_job is not None:
+
+                    # Use saved details for AjiraSafe advertisements.
+                    if linked_job is not None:
+                        job_title = linked_job.title
+                        company_name = linked_job.employer.company_name
+
+                    # Save BOTH AjiraSafe and external advertisement reports.
+                    new_report = SuspiciousJobReport.objects.create(
+                        job=linked_job,
+                        applicant=applicant,
+                        job_title=job_title,
+                        company_name=company_name,
+                        job_url=job_url,
+                        reason=reason,
+                        description=description,
+                        evidence=evidence,
+                        status=SuspiciousJobReport.Status.PENDING,
+                    )
+
+                    messages.success(
+                        request,
+                        f"Your suspicious job report #{new_report.report_id} "
+                        "has been submitted successfully. "
+                        "You can track its status under My Submitted Reports."
+                    )
+
+                    return redirect(
+                        f"{reverse('dashboard')}?tab=reports"
+                    )
 
     # Handle applicant feedback submissions.
     if request.method == "POST" and "feedback_type" in request.POST:
@@ -1436,9 +1621,18 @@ def dashboard(request):
         ],
     ).count()
 
+  
     reports_count = SuspiciousJobReport.objects.filter(
         applicant=applicant
     ).count()
+
+    # Retrieve the applicant's reports in ascending report number order.
+    my_reports = (
+        SuspiciousJobReport.objects
+        .filter(applicant=applicant)
+        .select_related("job")
+        .order_by("report_id")
+    )
 
     pending_feedback_count = feedback_submissions.filter(
         status=Testimonial.Status.PENDING
@@ -1451,11 +1645,11 @@ def dashboard(request):
         "jobs_analyzed": jobs_analyzed,
         "high_risk_count": high_risk_count,
         "reports_count": reports_count,
+        "my_reports": my_reports,
         "pending_feedback_count": pending_feedback_count,
         "feedback_submissions": feedback_submissions,
         "analysis_history": history_rows,
         "latest_assessment": latest_assessment,
-
     }
 
     return render(
@@ -1463,6 +1657,7 @@ def dashboard(request):
         "core/Applicantdashboard.html",
         context,
     )
+
 
 def build_applicant_lime_summary(lime_data, structured=False):
     """
@@ -1971,18 +2166,85 @@ def admin_dashboard(request):
     total_job_advertisements = JobAdvertisement.objects.count()
     total_analysis_results = AnalysisResult.objects.count()
 
-    # Recent users and testimonials.
+    # Recent users for the Overview section.
+    # Keep this limited to five accounts.
     recent_users = User.objects.order_by("-date_joined")[:5]
 
+    # All registered users for Manage Users.
+    user_queryset = (
+        User.objects
+        .prefetch_related("groups")
+        .select_related("account_flag")
+        .order_by("-date_joined")
+    )
+
+    # Search by name, username, or email.
+    user_search = request.GET.get("user_search", "").strip()
+
+    if user_search:
+        user_queryset = user_queryset.filter(
+            Q(username__icontains=user_search)
+            | Q(first_name__icontains=user_search)
+            | Q(last_name__icontains=user_search)
+            | Q(email__icontains=user_search)
+        )
+
+    # Filter by an existing Django group.
+    user_role = request.GET.get("user_role", "").strip()
+
+    if user_role:
+        user_queryset = user_queryset.filter(
+            groups__name=user_role
+        )
+
+    # Filter by account activation status.
+    user_status = request.GET.get("user_status", "").strip()
+
+    if user_status == "active":
+        user_queryset = user_queryset.filter(is_active=True)
+
+    elif user_status == "inactive":
+        user_queryset = user_queryset.filter(is_active=False)
+
+    user_queryset = user_queryset.distinct()
+
+    # Paginate the Manage Users list.
+    user_paginator = Paginator(user_queryset, 10)
+
+    user_page_number = request.GET.get("user_page")
+
+    all_users = user_paginator.get_page(user_page_number)
+
+    # Existing groups are displayed as role filters.
+    user_role_choices = Group.objects.order_by("name")
+    # Recent testimonials for the Overview section.
     recent_testimonials = Testimonial.objects.select_related(
         "user"
     ).order_by("-created_at")[:5]
 
     # Recent suspicious job reports.
-    recent_reports = SuspiciousJobReport.objects.select_related(
-        "job",
-        "applicant__user",
-    ).order_by("-report_date")[:5]
+    # Keep the five newest reports, displayed in ascending order.
+    recent_reports = list(
+        SuspiciousJobReport.objects
+        .select_related(
+            "job",
+            "applicant__user",
+        )
+        .order_by("-report_id")[:5]
+    )
+
+    recent_reports.reverse()
+
+    # Retrieve all suspicious job reports in ascending report number order.
+    all_suspicious_reports = (
+        SuspiciousJobReport.objects
+        .select_related(
+            "job",
+            "applicant__user",
+            "reviewed_by__user",
+        )
+        .order_by("report_id")
+    )
 
     # Recent feedback from the unified Testimonial model.
     recent_feedback = Testimonial.objects.select_related(
@@ -2019,9 +2281,10 @@ def admin_dashboard(request):
 
         "total_reports": total_reports,
         "pending_reports": pending_reports,
+        "all_suspicious_reports": all_suspicious_reports,
         "total_employers": total_employers,
         "pending_employer_verifications": (
-            pending_employer_verifications
+        pending_employer_verifications
         ),
         "employer_list": employer_list,
         "total_feedback": total_feedback,
@@ -2031,6 +2294,11 @@ def admin_dashboard(request):
         "total_analysis_results": total_analysis_results,
 
         "recent_users": recent_users,
+        "all_users": all_users,
+        "user_search": user_search,
+        "user_role": user_role,
+        "user_status": user_status,
+        "user_role_choices": user_role_choices,
         "recent_testimonials": recent_testimonials,
         "recent_reports": recent_reports,
         "recent_feedback": recent_feedback,
@@ -2046,6 +2314,156 @@ def admin_dashboard(request):
         "core/AdminDashboard.html",
         context,
     )
+
+
+# =========================================================
+# ADMINISTRATOR USER ACCOUNT MANAGEMENT
+# =========================================================
+
+@login_required(login_url="login")
+@require_POST
+@never_cache
+def manage_user_account(request, user_id):
+
+    # Only System Administrators may manage accounts.
+    if not request.user.groups.filter(
+        name="System Administrator"
+    ).exists():
+        return HttpResponseForbidden(
+            "You are not authorized to manage user accounts."
+        )
+
+    administrator = SystemAdministrator.objects.filter(
+        user=request.user
+    ).first()
+
+    if administrator is None:
+        return HttpResponseForbidden(
+            "Your administrator profile could not be found."
+        )
+
+    target_user = get_object_or_404(User, pk=user_id)
+
+    action = request.POST.get("action", "").strip()
+
+    # Prevent an administrator from disabling their own account.
+    if (
+        action == "deactivate"
+        and target_user.pk == request.user.pk
+    ):
+        messages.error(
+            request,
+            "You cannot deactivate your own administrator account."
+        )
+        return redirect("admin_dashboard")
+
+    # Do not allow the last active administrator to be deactivated.
+    if (
+        action == "deactivate"
+        and target_user.groups.filter(
+            name="System Administrator"
+        ).exists()
+        and target_user.is_active
+    ):
+        active_admin_count = User.objects.filter(
+            is_active=True,
+            groups__name="System Administrator"
+        ).distinct().count()
+
+        if active_admin_count <= 1:
+            messages.error(
+                request,
+                "The last active administrator cannot be deactivated."
+            )
+            return redirect("admin_dashboard")
+
+    if action == "activate":
+
+        target_user.is_active = True
+        target_user.save(update_fields=["is_active"])
+
+        messages.success(
+            request,
+            f"{target_user.username} has been activated."
+        )
+
+    elif action == "deactivate":
+
+        target_user.is_active = False
+        target_user.save(update_fields=["is_active"])
+
+        messages.success(
+            request,
+            f"{target_user.username} has been deactivated."
+        )
+
+    elif action == "flag":
+
+        reason = request.POST.get("reason", "").strip()
+
+        if not reason:
+            messages.error(
+                request,
+                "Please provide a reason for flagging this account."
+            )
+            return redirect("admin_dashboard")
+
+        account_flag, created = UserAccountFlag.objects.get_or_create(
+            user=target_user
+        )
+
+        if account_flag.is_flagged:
+            messages.warning(
+                request,
+                "This account is already flagged."
+            )
+            return redirect("admin_dashboard")
+
+        account_flag.is_flagged = True
+        account_flag.reason = reason
+        account_flag.flagged_by = administrator
+        account_flag.flagged_at = timezone.now()
+        account_flag.cleared_by = None
+        account_flag.cleared_at = None
+
+        account_flag.save()
+
+        messages.success(
+            request,
+            f"{target_user.username} has been flagged for administrator attention."
+        )
+
+    elif action == "unflag":
+
+        account_flag = UserAccountFlag.objects.filter(
+            user=target_user,
+            is_flagged=True
+        ).first()
+
+        if account_flag is None:
+            messages.warning(
+                request,
+                "This account is not currently flagged."
+            )
+            return redirect("admin_dashboard")
+
+        account_flag.is_flagged = False
+        account_flag.cleared_by = administrator
+        account_flag.cleared_at = timezone.now()
+        account_flag.save()
+
+        messages.success(
+            request,
+            f"The flag on {target_user.username} has been cleared."
+        )
+
+    else:
+        messages.error(
+            request,
+            "Invalid account management action."
+        )
+
+    return redirect("admin_dashboard")
 
 @login_required(login_url="login")
 @require_POST
@@ -2456,3 +2874,170 @@ def testimonial_action(request, testimonial_id, action):
         messages.success(request, message)
 
     return redirect("admin_dashboard")
+
+
+
+@login_required(login_url="login")
+@require_POST
+@never_cache
+def suspicious_job_report_action(request, report_id):
+
+    # Only System Administrators may manage suspicious job reports.
+    if not request.user.groups.filter(
+        name="System Administrator"
+    ).exists():
+        return HttpResponseForbidden(
+            "You are not authorised to manage suspicious job reports."
+        )
+
+    # Confirm that the administrator has a registered profile.
+    administrator = SystemAdministrator.objects.filter(
+        user=request.user
+    ).first()
+
+    if administrator is None:
+        messages.error(
+            request,
+            "Your administrator profile could not be found."
+        )
+        return redirect("admin_dashboard")
+
+    # Retrieve the submitted status and administrator comment.
+    new_status = request.POST.get("status", "").strip()
+    admin_comment = request.POST.get("admin_comment", "").strip()
+
+    # Validate the submitted status against the model's actual choices.
+    valid_statuses = dict(
+        SuspiciousJobReport.Status.choices
+    )
+
+    if new_status not in valid_statuses:
+        messages.error(
+            request,
+            "Please select a valid suspicious report status."
+        )
+        return redirect(
+            f"{reverse('admin_dashboard')}?tab=reports"
+        )
+
+  
+    # Lock the report while its status is being updated.
+    with transaction.atomic():
+
+        report = get_object_or_404(
+            SuspiciousJobReport.objects.select_for_update(),
+            report_id=report_id
+        )
+
+        # Prevent modifications after a report has been resolved.
+        if report.status == SuspiciousJobReport.Status.RESOLVED:
+            messages.warning(
+                request,
+                f"Suspicious job report #{report.report_id} "
+                "has already been resolved and cannot be modified."
+            )
+            return redirect(
+                f"{reverse('admin_dashboard')}?tab=reports"
+            )
+
+   
+
+        # Require an administrative comment when resolving a report.
+        if (
+            new_status == SuspiciousJobReport.Status.RESOLVED
+            and not admin_comment
+        ):
+            messages.error(
+                request,
+                "Please provide a final administrative comment "
+                "before resolving this report."
+            )
+            return redirect(
+                f"{reverse('admin_dashboard')}?tab=reports"
+            )
+        # Update the report and preserve the administrator's review details.
+        report.status = new_status
+        report.reviewed_by = administrator
+        report.reviewed_at = timezone.now()
+        report.admin_comment = admin_comment
+
+        report.save(
+            update_fields=[
+                "status",
+                "reviewed_by",
+                "reviewed_at",
+                "admin_comment",
+            ]
+        )
+
+    messages.success(
+        request,
+        f"Suspicious job report #{report.report_id} "
+        f"has been updated to {valid_statuses[new_status]}."
+    )
+
+    return redirect(
+        f"{reverse('admin_dashboard')}?tab=reports"
+    )
+
+
+
+@login_required(login_url="login")
+@require_GET
+@never_cache
+def suspicious_job_report_evidence(request, report_id):
+
+    # Only System Administrators may access submitted evidence.
+    if not request.user.groups.filter(
+        name="System Administrator"
+    ).exists():
+        return HttpResponseForbidden(
+            "You are not authorised to access suspicious report evidence."
+        )
+
+    # Confirm that the administrator has a registered profile.
+    administrator_exists = SystemAdministrator.objects.filter(
+        user=request.user
+    ).exists()
+
+    if not administrator_exists:
+        return HttpResponseForbidden(
+            "Your administrator profile could not be verified."
+        )
+
+    # Retrieve the requested suspicious job report.
+    report = get_object_or_404(
+        SuspiciousJobReport,
+        report_id=report_id
+    )
+
+    # Confirm that evidence was attached to this report.
+    if not report.evidence:
+        raise Http404("No supporting evidence is attached to this report.")
+
+    # Confirm that the file exists in private storage.
+    if not report.evidence.storage.exists(report.evidence.name):
+        raise Http404("The supporting evidence file could not be found.")
+
+    # Open the file through Django's storage system.
+    try:
+        evidence_file = report.evidence.open("rb")
+    except (OSError, ValueError):
+        raise Http404("The supporting evidence file is unavailable.")
+
+    # Use only the stored filename, not a user-supplied file path.
+    filename = report.evidence.name.rsplit("/", 1)[-1]
+
+    # Force downloading rather than displaying uploaded content in the browser.
+    response = FileResponse(
+        evidence_file,
+        as_attachment=True,
+        filename=filename,
+        content_type="application/octet-stream",
+    )
+
+    # Apply additional response security headers.
+    response["X-Content-Type-Options"] = "nosniff"
+    response["Cache-Control"] = "private, no-store"
+
+    return response

@@ -360,119 +360,543 @@
             </section>
         </section>
 
-        <!-- MANAGE USERS -->
-        <section class="admin-panel" data-admin-panel="users" hidden>
+      <!-- MANAGE USERS -->
+<section class="admin-panel" data-admin-panel="users" hidden>
 
-            <div class="admin-panel-heading">
-                <p class="admin-eyebrow">ACCOUNT ADMINISTRATION</p>
-                <h1>Manage system users</h1>
+    <div class="admin-panel-heading">
+        <p class="admin-eyebrow">ACCOUNT ADMINISTRATION</p>
+        <h1>Manage system users</h1>
+        <p>
+            Review registered accounts, monitor account status,
+            and flag accounts that require administrator attention.
+        </p>
+    </div>
+
+    <div class="admin-info-banner">
+        <strong>User management</strong>
+        <p>
+            Administrators can activate or deactivate accounts and
+            flag accounts for further attention. Flagging does not
+            restrict login access or change the user's assigned role.
+        </p>
+    </div>
+
+    <section class="admin-content-section admin-table-card">
+
+        <div class="admin-table-heading">
+            <div>
+                <h2>Registered accounts</h2>
                 <p>
-                    Review registered accounts and identify the role
-                    assigned to each account.
+                    {{ total_users|default:0 }} account(s) in the system.
                 </p>
             </div>
+        </div>
 
-            <div class="admin-info-banner">
-                <strong>User management</strong>
-                <p>
-                    This section currently lists registered accounts.
-                    Account activation, role changes, and other administrative
-                    actions require protected server-side views before they
-                    can be enabled.
-                </p>
+        <!-- SEARCH AND FILTERS -->
+        <form method="GET"
+              action="{% url 'admin_dashboard' %}"
+              class="admin-user-filter-form">
+
+            <input
+                type="search"
+                name="user_search"
+                value="{{ user_search }}"
+                placeholder="Search name, username or email..."
+                aria-label="Search users"
+            >
+
+            <select name="user_role" aria-label="Filter by role">
+                <option value="">All roles</option>
+
+                {% for role in user_role_choices %}
+                    <option
+                        value="{{ role.name }}"
+                        {% if user_role == role.name %}selected{% endif %}
+                    >
+                        {{ role.name }}
+                    </option>
+                {% endfor %}
+            </select>
+
+            <select name="user_status" aria-label="Filter by status">
+                <option value="">All account statuses</option>
+
+                <option value="active"
+                    {% if user_status == "active" %}selected{% endif %}>
+                    Active
+                </option>
+
+                <option value="inactive"
+                    {% if user_status == "inactive" %}selected{% endif %}>
+                    Inactive
+                </option>
+            </select>
+
+            <button type="submit" class="admin-primary-button">
+                Search
+            </button>
+
+            <a href="{% url 'admin_dashboard' %}"
+               class="admin-secondary-button">
+                Clear filters
+            </a>
+
+            <input type="hidden" name="tab" value="users">
+
+        </form>
+
+        <div class="admin-table-wrap">
+            <table class="admin-table">
+
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Date joined</th>
+                        <th>Account status</th>
+                        <th>Flag status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for account in all_users %}
+
+                        <tr>
+                            <td>
+                                <strong>
+                                    {{ account.get_full_name|default:account.username }}
+                                </strong>
+                                <br>
+                                <small>@{{ account.username }}</small>
+                            </td>
+
+                            <td>{{ account.email|default:"—" }}</td>
+
+                            <td>
+                                {% for group in account.groups.all %}
+                                    <span class="admin-status-pill info">
+                                        {{ group.name }}
+                                    </span>
+                                {% empty %}
+                                    <span class="admin-status-pill muted">
+                                        Unassigned
+                                    </span>
+                                {% endfor %}
+                            </td>
+
+                            <td>
+                                {{ account.date_joined|date:"d M Y" }}
+                            </td>
+
+                            <td>
+                                {% if account.is_active %}
+                                    <span class="admin-status-pill success">
+                                        Active
+                                    </span>
+                                {% else %}
+                                    <span class="admin-status-pill muted">
+                                        Inactive
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if account.account_flag.is_flagged %}
+                                    <span class="admin-status-pill danger">
+                                        Flagged
+                                    </span>
+                                    <br>
+                                    <small>
+                                        {{ account.account_flag.reason }}
+                                    </small>
+                                {% else %}
+                                    <span class="admin-status-pill muted">
+                                        Not flagged
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                <div class="admin-user-actions">
+
+                                    {% if account.is_active %}
+
+                                        <form method="POST"
+                                              action="{% url 'manage_user_account' account.id %}">
+                                            {% csrf_token %}
+                                            <input type="hidden"
+                                                   name="action"
+                                                   value="deactivate">
+
+                                            <button type="submit"
+                                                    class="admin-secondary-button"
+                                                    {% if account.id == request.user.id %}disabled{% endif %}>
+                                                Deactivate
+                                            </button>
+                                        </form>
+
+                                    {% else %}
+
+                                        <form method="POST"
+                                              action="{% url 'manage_user_account' account.id %}">
+                                            {% csrf_token %}
+                                            <input type="hidden"
+                                                   name="action"
+                                                   value="activate">
+
+                                            <button type="submit"
+                                                    class="admin-primary-button">
+                                                Activate
+                                            </button>
+                                        </form>
+
+                                    {% endif %}
+
+                                    {% if account.account_flag.is_flagged %}
+
+                                        <form method="POST"
+                                              action="{% url 'manage_user_account' account.id %}">
+                                            {% csrf_token %}
+                                            <input type="hidden"
+                                                   name="action"
+                                                   value="unflag">
+
+                                            <button type="submit"
+                                                    class="admin-secondary-button">
+                                                Clear flag
+                                            </button>
+                                        </form>
+
+                                    {% else %}
+
+                                        <form method="POST"
+                                              action="{% url 'manage_user_account' account.id %}"
+                                              class="admin-flag-form">
+
+                                            {% csrf_token %}
+
+                                            <input type="hidden"
+                                                   name="action"
+                                                   value="flag">
+
+                                            <input
+                                                type="text"
+                                                name="reason"
+                                                placeholder="Reason for flagging"
+                                                required
+                                                maxlength="500"
+                                            >
+
+                                            <button type="submit"
+                                                    class="admin-danger-button">
+                                                Flag account
+                                            </button>
+
+                                        </form>
+
+                                    {% endif %}
+
+                                </div>
+                            </td>
+                        </tr>
+
+                    {% empty %}
+
+                        <tr>
+                            <td colspan="7" class="admin-empty-cell">
+                                No registered accounts match your search.
+                            </td>
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+            </table>
+        </div>
+
+        <!-- PAGINATION -->
+        {% if all_users.has_other_pages %}
+
+            <div class="admin-pagination">
+
+                {% if all_users.has_previous %}
+                    <a href="?user_page={{ all_users.previous_page_number }}&user_search={{ user_search|urlencode }}&user_role={{ user_role|urlencode }}&user_status={{ user_status|urlencode }}&tab=users">
+                        Previous
+                    </a>
+                {% endif %}
+
+                <span>
+                    Page {{ all_users.number }}
+                    of {{ all_users.paginator.num_pages }}
+                </span>
+
+                {% if all_users.has_next %}
+                    <a href="?user_page={{ all_users.next_page_number }}&user_search={{ user_search|urlencode }}&user_role={{ user_role|urlencode }}&user_status={{ user_status|urlencode }}&tab=users">
+                        Next
+                    </a>
+                {% endif %}
+
             </div>
 
-            <section class="admin-content-section admin-table-card">
+        {% endif %}
 
-                <div class="admin-table-heading">
-                    <div>
-                        <h2>Registered accounts</h2>
-                        <p>{{ total_users|default:0 }} account(s) in the system.</p>
-                    </div>
-                </div>
+        <p class="admin-footnote">
+            Flagged accounts remain able to log in. Deactivating an
+            account prevents normal authentication until an administrator
+            activates it again.
+        </p>
 
-                <div class="admin-table-wrap">
-                    <table class="admin-table">
-                        <thead>
-                            <tr>
-                                <th>User</th>
-                                <th>Email</th>
-                                <th>Role</th>
-                                <th>Date joined</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
+    </section>
+</section>
+<!-- SUSPICIOUS REPORTS -->
+<section class="admin-panel" data-admin-panel="reports" hidden>
 
-                        <tbody>
-                            {% for account in recent_users %}
-                                <tr>
-                                    <td>{{ account.get_full_name|default:account.username }}</td>
-                                    <td>{{ account.email|default:"—" }}</td>
+    <div class="admin-panel-heading reports-page-heading">
+        <p class="admin-eyebrow">COMMUNITY SAFETY</p>
+        <h1>Suspicious job reports</h1>
+        <p>
+            Review reports submitted by applicants, investigate
+            suspicious advertisements, and update report statuses.
+        </p>
+    </div>
 
-                                    <td>
-                                        {% for group in account.groups.all %}
-                                            <span class="admin-status-pill info">{{ group.name }}</span>
-                                        {% empty %}
-                                            <span class="admin-status-pill muted">Unassigned</span>
-                                        {% endfor %}
-                                    </td>
-
-                                    <td>{{ account.date_joined|date:"d M Y" }}</td>
-
-                                    <td>
-                                        {% if account.is_active %}
-                                            <span class="admin-status-pill success">Active</span>
-                                        {% else %}
-                                            <span class="admin-status-pill muted">Inactive</span>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                            {% empty %}
-                                <tr>
-                                    <td colspan="5" class="admin-empty-cell">
-                                        No registered users found.
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-
-                <p class="admin-footnote">
-                    This list currently shows the five most recently
-                    registered accounts. Pagination and secure account
-                    management actions can be added next.
-                </p>
-
-            </section>
-        </section>
-
-        <!-- SUSPICIOUS REPORTS -->
-        <section class="admin-panel" data-admin-panel="reports" hidden>
-
-            <div class="admin-panel-heading">
-                <p class="admin-eyebrow">COMMUNITY SAFETY</p>
-                <h1>Suspicious job reports</h1>
-                <p>
-                    Review reports submitted by applicants and update
-                    their review status.
-                </p>
+    <div class="admin-summary-grid reports-summary-grid">
+        <div class="admin-summary-card reports-summary-card reports-total-card">
+            <span class="reports-metric-icon" aria-hidden="true">▤</span>
+            <div class="reports-metric-copy">
+                <span class="reports-metric-label">Total reports</span>
+                <strong>{{ total_reports|default:0 }}</strong>
+                <small>Reports submitted by applicants</small>
             </div>
+        </div>
 
-            <div class="admin-empty-feature">
-                <span class="admin-empty-icon amber">⚑</span>
-                <h2>Report management is next</h2>
-                <p>
-                    The current Django models do not yet include a
-                    suspicious-job-report model. We will connect this
-                    section to PostgreSQL when we implement report
-                    submission, report review, and status updates.
-                </p>
+        <div class="admin-summary-card reports-summary-card reports-pending-card">
+            <span class="reports-metric-icon" aria-hidden="true">◷</span>
+            <div class="reports-metric-copy">
+                <span class="reports-metric-label">Pending reports</span>
+                <strong>{{ pending_reports|default:0 }}</strong>
+                <small>Reports awaiting an administrator review</small>
             </div>
+        </div>
+    </div>
 
-        </section>
+    <div class="admin-table-section reports-queue-card">
 
-   
+        <div class="admin-section-heading reports-queue-heading">
+            <div>
+                <p class="admin-eyebrow">REPORT QUEUE</p>
+                <h2>Submitted reports</h2>
+                <p>Review each concern and record the action taken.</p>
+            </div>
+            <span class="reports-queue-count">
+                {{ total_reports|default:0 }} total
+            </span>
+        </div>
+
+        <div class="admin-table-wrapper reports-table-wrapper">
+            <p class="reports-table-hint">Scroll horizontally to see all report details.</p>
+            <table class="admin-table reports-table">
+                <thead>
+                    <tr>
+                        <th>Report</th>
+                        <th>Advertisement</th>
+                        <th>Applicant</th>
+                        <th>Reason</th>
+                        <th>Date submitted</th>
+                        <th>Status</th>
+                        <th>Review and update</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for report in all_suspicious_reports %}
+                    <tr>
+                        <td>
+                            <strong>#{{ report.report_id }}</strong>
+                        </td>
+
+                        <td>
+                            <strong>
+                                {{ report.job_title|default:"Untitled advertisement" }}
+                            </strong>
+                            <br>
+                            <span>{{ report.company_name|default:"Company not provided" }}</span>
+
+                            {% if report.job_url %}
+                                <br>
+                                <a href="{{ report.job_url }}"
+                                   target="_blank"
+                                   rel="noopener noreferrer">
+                                    View advertisement
+                                </a>
+                            {% endif %}
+
+                            <br>
+
+{% if report.evidence %}
+    <a href="{% url 'suspicious_job_report_evidence' report.report_id %}"
+       class="admin-text-button">
+        Download supporting evidence ↓
+    </a>
+{% else %}
+    <small class="admin-footnote">
+        No supporting evidence attached.
+    </small>
+{% endif %}
+
+                            {% if report.job %}
+                                <br>
+                                <small>AjiraSafe advertisement</small>
+                            {% else %}
+                                <br>
+                                <small>External advertisement</small>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {{ report.applicant.user.get_full_name|default:report.applicant.user.username }}
+                            <br>
+                            <small>{{ report.applicant.user.email }}</small>
+                        </td>
+
+                        <td>
+                            {{ report.get_reason_display }}
+                            {% if report.description %}
+                                <details>
+                                    <summary>View explanation</summary>
+                                    <p>{{ report.description|linebreaksbr }}</p>
+                                </details>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {{ report.report_date|date:"d M Y, H:i" }}
+                        </td>
+
+                        <td>
+                            {% if report.status == "pending" %}
+                                <span class="admin-status-pill pending">
+                                    Pending
+                                </span>
+                            {% elif report.status == "under_review" %}
+                                <span class="admin-status-pill info">
+                                    Under Review
+                                </span>
+                            {% elif report.status == "resolved" %}
+                                <span class="admin-status-pill success">
+                                    Resolved
+                                </span>
+                            {% endif %}
+                        </td>
+
+                       
+<td class="report-review-cell">
+
+    {% if report.status == "resolved" %}
+
+        <div class="report-final-review">
+            <span class="admin-status-pill success">
+                Finalised
+            </span>
+
+            <strong>Final administrative comment</strong>
+
+            <p>
+                {{ report.admin_comment|default:"No comment recorded."|linebreaksbr }}
+            </p>
+
+            {% if report.reviewed_by %}
+                <small>
+                    Resolved by:
+                    {{ report.reviewed_by.user.get_full_name|default:report.reviewed_by.user.username }}
+                </small>
+            {% endif %}
+
+            {% if report.reviewed_at %}
+                <br>
+                <small>
+                    Resolved on:
+                    {{ report.reviewed_at|date:"d M Y, H:i" }}
+                </small>
+            {% endif %}
+
+            <p class="report-locked-note">
+                This report is final and can no longer be modified.
+            </p>
+        </div>
+
+    {% else %}
+
+        <form method="POST"
+              action="{% url 'suspicious_job_report_action' report.report_id %}"
+              class="report-review-form">
+
+            {% csrf_token %}
+
+            <label for="status-{{ report.report_id }}">
+                Update status
+            </label>
+
+            <select id="status-{{ report.report_id }}"
+                    name="status"
+                    required>
+
+                <option value="pending"
+                    {% if report.status == "pending" %}selected{% endif %}>
+                    Pending
+                </option>
+
+                <option value="under_review"
+                    {% if report.status == "under_review" %}selected{% endif %}>
+                    Under Review
+                </option>
+
+                <option value="resolved">
+                    Resolved
+                </option>
+
+            </select>
+
+            <label for="comment-{{ report.report_id }}">
+                Administrator comment
+            </label>
+
+            <textarea id="comment-{{ report.report_id }}"
+                      name="admin_comment"
+                      rows="4"
+                      placeholder="Enter review findings or action taken..."
+                      required>{{ report.admin_comment }}</textarea>
+
+            <button type="submit">
+                Save review
+            </button>
+
+        </form>
+
+    {% endif %}
+
+</td>
+
+                    </tr>
+
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="admin-empty-cell">
+                            No suspicious job reports have been submitted yet.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+</section>
+
 <!-- EMPLOYER VERIFICATION -->
 <section class="admin-panel" data-admin-panel="employers" hidden>
 
@@ -1114,7 +1538,24 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     );
 
-    showAdminPanel("overview");
+const requestedTab = new URLSearchParams(
+    window.location.search
+).get("tab");
+
+const validTabs = [
+    "overview",
+    "users",
+    "reports",
+    "employers",
+    "feedback",
+    "activity"
+];
+
+showAdminPanel(
+    validTabs.includes(requestedTab)
+        ? requestedTab
+        : "overview"
+);    
 
     const employerCards = Array.from(
         document.querySelectorAll("[data-employer-card]")

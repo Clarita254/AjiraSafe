@@ -1032,8 +1032,10 @@
                         class="dashboard-form"
                         id="job-assessment-form"
                         method="post"
+                        action="{% url 'dashboard' %}?tab=reports" 
                     >
                         {% csrf_token %}
+                        <input type="hidden" name="suspicious_report_submit" value="1">
 
                         <input
                             type="hidden"
@@ -1451,52 +1453,106 @@
                         </div>
                     </div>
 
-                    <form class="dashboard-form" id="suspicious-report-form"
-                          method="post">
-                        {% csrf_token %}
+<form class="dashboard-form"
+      id="suspicious-report-form"
+      method="post"
+      enctype="multipart/form-data">
 
-                        <label for="report-job-title">Job title <span>*</span></label>
-                        <input id="report-job-title" name="job_title" type="text"
-                               placeholder="Title of the suspicious job" required>
+    {% csrf_token %}
 
-                        <label for="report-company">Advertised employer / company <span>*</span></label>
-                        <input id="report-company" name="company_name" type="text"
-                               placeholder="Company or recruiter name" required>
+    <label for="report-job-title">Job title <span>*</span></label>
+    <input id="report-job-title"
+           name="job_title"
+           type="text"
+           placeholder="Title of the suspicious job"
+           required>
 
-                        <label for="report-link">Job advertisement link</label>
-                        <input id="report-link" name="job_url" type="url"
-                               placeholder="https://example.com/job-listing">
+    <label for="report-company">
+        Advertised employer / company <span>*</span>
+    </label>
+    <input id="report-company"
+           name="company_name"
+           type="text"
+           placeholder="Company or recruiter name"
+           required>
 
-                        <label for="report-reason">Reason for reporting <span>*</span></label>
-                        <select id="report-reason" name="reason" required>
-                            <option value="">Select a concern</option>
-                            <option value="payment_request">Requests payment or recruitment fees</option>
-                            <option value="personal_information">Requests sensitive personal or financial information</option>
-                            <option value="fake_employer">Employer identity appears suspicious</option>
-                            <option value="misleading_offer">Unrealistic salary or misleading job offer</option>
-                            <option value="suspicious_contact">Suspicious email, phone number or contact details</option>
-                            <option value="other">Other concern</option>
-                        </select>
+    <label for="report-link">Job advertisement link</label>
+    <input id="report-link"
+           name="job_url"
+           type="url"
+           placeholder="https://example.com/job-listing">
 
-                        <label for="report-description">Describe your concern <span>*</span></label>
-                        <textarea id="report-description" name="description" rows="5"
-                                  placeholder="Explain what seems suspicious. Do not include passwords or other sensitive information."
-                                  required></textarea>
+    <label for="report-reason">
+        Reason for reporting <span>*</span>
+    </label>
+    <select id="report-reason" name="reason" required>
+        <option value="">Select a concern</option>
+        <option value="payment_request">
+            Requests payment or recruitment fees
+        </option>
+        <option value="personal_information">
+            Requests sensitive personal or financial information
+        </option>
+        <option value="fake_employer">
+            Employer identity appears suspicious
+        </option>
+        <option value="misleading_offer">
+            Unrealistic salary or misleading job offer
+        </option>
+        <option value="suspicious_contact">
+            Suspicious email, phone number or contact details
+        </option>
+        <option value="other">Other concern</option>
+    </select>
 
-                        <div class="form-notice">
-                            <span>i</span>
-                            <p>
-                                Reports should be factual and submitted in good faith.
-                                Saving reports and tracking their status will be enabled
-                                when the backend is connected.
-                            </p>
-                        </div>
+    <label for="report-description">
+        Describe your concern <span>*</span>
+    </label>
+    <textarea id="report-description"
+              name="description"
+              rows="5"
+              placeholder="Explain what seems suspicious. Do not include passwords or other sensitive information."
+              required></textarea>
 
-                        <button class="primary-action form-action"
-                                type="button" disabled>
-                            Report submission not connected yet
-                        </button>
-                    </form>
+    <div class="report-evidence-panel">
+        <div class="report-evidence-heading">
+            <label for="report-evidence">
+                Supporting evidence
+                <span class="optional-label">(Optional)</span>
+            </label>
+            <span class="report-evidence-badge">JPG · JPEG · PNG · PDF</span>
+        </div>
+
+        <input id="report-evidence"
+               name="evidence"
+               type="file"
+               accept=".jpg,.jpeg,.png,.pdf">
+
+        <small class="form-help-text">
+            Attach screenshots of job advertisements, suspicious messages,
+            emails or other relevant documents. Maximum file size: 5 MB.
+        </small>
+
+        <div class="form-notice">
+            <span aria-hidden="true">!</span>
+            <p>
+                Reports should be factual and submitted in good faith.
+                Evidence may help administrators investigate. Do not upload
+                passwords, identity documents or unrelated sensitive information.
+            </p>
+        </div>
+    </div>
+
+   <button
+    class="primary-action form-action"
+    type="submit"
+    name="suspicious_report_submit"
+    value="1"
+>
+    Submit Report
+</button>
+</form>
+
                 </section>
 
                 <section class="content-card submitted-records">
@@ -1508,29 +1564,143 @@
                         </div>
                     </div>
 
-                    <div class="empty-state">
-                        <div class="empty-state-icon report-empty-icon">⚑</div>
-                        <h3>No reports submitted yet</h3>
-                        <p>
-                            Each report will show its reference, job title, submission
-                            date and review status, such as Pending, Under Review or
-                            Resolved.
-                        </p>
-                    </div>
+                    
+{% for report in my_reports %}
+
+    <article class="feedback-submission-card">
+
+        <div class="feedback-submission-header">
+
+            <h3>Report #{{ report.report_id }}</h3>
+
+           {% if report.status == "pending" %}
+
+    <span class="feedback-status pending">
+        Pending
+    </span>
+
+{% elif report.status == "under_review" %}
+
+    <span class="feedback-status under-review">
+        Under Review
+    </span>
+
+{% elif report.status == "resolved" %}
+
+    <span class="feedback-status approved">
+        Resolved
+    </span>
+
+{% endif %}
+
+        </div>
+
+        <div class="report-submission-details">
+
+            <p>
+                <strong>Job Title:</strong>
+                {{ report.job_title }}
+            </p>
+
+            <p>
+                <strong>Company:</strong>
+                {{ report.company_name }}
+            </p>
+
+            <p>
+                <strong>Reason:</strong>
+
+                {% if report.reason == "payment_request" %}
+                    Requests payment or recruitment fees
+
+                {% elif report.reason == "personal_information" %}
+                    Requests sensitive personal or financial information
+
+                {% elif report.reason == "fake_employer" %}
+                    Employer identity appears suspicious
+
+                {% elif report.reason == "misleading_offer" %}
+                    Unrealistic salary or misleading job offer
+
+                {% elif report.reason == "suspicious_contact" %}
+                    Suspicious email, phone number or contact details
+
+                {% else %}
+                    Other concern
+                {% endif %}
+            </p>
+
+            {% if report.description %}
+                <p>
+                    <strong>Description:</strong>
+                    {{ report.description }}
+                </p>
+            {% endif %}
+
+            {% if report.job_url %}
+                <p>
+                    <strong>Advertisement Link:</strong>
+                    <a href="{{ report.job_url }}"
+                       target="_blank"
+                       rel="noopener noreferrer">
+                        View Advertisement
+                    </a>
+                </p>
+            {% endif %}
+
+        </div>
+
+        <div class="feedback-submission-meta">
+            <span>
+                Reference: #{{ report.report_id }}
+            </span>
+
+            <span>
+                Submitted {{ report.report_date|date:"d M Y, H:i" }}
+            </span>
+        </div>
+
+    </article>
+
+{% empty %}
+
+    <div class="empty-state">
+        <div class="empty-state-icon report-empty-icon">⚑</div>
+
+        <h3>No reports submitted yet</h3>
+
+        <p>
+            Once you submit a suspicious job report, it will
+            appear here with its reference number, job details,
+            submission date and current review status.
+        </p>
+    </div>
+
+{% endfor %}
+
 
                     <div class="status-guide">
                         <strong>Report status guide</strong>
                         <p>
                             <span class="status-dot pending-dot"></span>
-                            <b>Pending</b> — the report has been received.
+                            <span class="status-guide-copy">
+                                <b>Pending</b>
+                                <span>The report has been received.</span>
+                            </span>
                         </p>
                         <p>
                             <span class="status-dot review-dot"></span>
-                            <b>Under Review</b> — the report is being examined.
+                            <span class="status-guide-copy">
+                                <b>Under Review</b>
+                                <span>The report is being examined.</span>
+                            </span>
                         </p>
                         <p>
                             <span class="status-dot resolved-dot"></span>
-                            <b>Resolved</b> — the report review has been completed.
+                            <span class="status-guide-copy">
+                                <b>Resolved</b>
+                                <span>The report review has been completed.</span>
+                            </span>
                         </p>
                     </div>
                 </section>

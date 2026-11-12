@@ -2,7 +2,7 @@ from django.contrib.auth.models import Group, User
 from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 
-from core.models import JobApplicant
+from core.models import JobApplicant, Testimonial
 
 
 class DashboardAuthenticationTests(SimpleTestCase):
@@ -22,6 +22,51 @@ class DashboardAuthenticationTests(SimpleTestCase):
             response,
             f"{reverse('login')}?next={reverse('admin_dashboard')}",
             fetch_redirect_response=False,
+        )
+
+
+class PublicTestimonialsTests(TestCase):
+    def test_home_shows_three_latest_approved_testimonials(self):
+        approved_feedback = []
+        for index in range(5):
+            user = User.objects.create_user(
+                username=f"testimonial-user-{index}",
+                first_name=f"Testimonial User {index}",
+            )
+            feedback = f"Approved testimonial {index}"
+            approved_feedback.append(feedback)
+            Testimonial.objects.create(
+                user=user,
+                feedback=feedback,
+                is_approved=True,
+            )
+
+        hidden_user = User.objects.create_user(
+            username="unapproved-testimonial-user",
+            first_name="Unapproved User",
+        )
+        Testimonial.objects.create(
+            user=hidden_user,
+            feedback="This testimonial is not approved",
+            is_approved=False,
+        )
+
+        home_response = self.client.get(reverse("home"))
+        full_page_response = self.client.get(reverse("testimonials"))
+
+        self.assertEqual(len(home_response.context["testimonials"]), 3)
+        self.assertSetEqual(
+            {
+                testimonial["feedback"]
+                for testimonial in home_response.context["testimonials"]
+            },
+            set(approved_feedback[-3:]),
+        )
+        self.assertEqual(len(full_page_response.context["testimonials"]), 5)
+        self.assertNotContains(home_response, "This testimonial is not approved")
+        self.assertNotContains(
+            full_page_response,
+            "This testimonial is not approved",
         )
 
 

@@ -126,7 +126,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = 'static/'
-
+# Private storage for suspicious job report evidence.
+# Files are served only through authorised Django views.
+MEDIA_ROOT = BASE_DIR / "private_media"
 
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
