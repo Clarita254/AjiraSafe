@@ -1492,6 +1492,149 @@
         padding: 14px;
     }
 }
+
+
+/* =====================================
+   ACTUAL ADVERTISEMENT WARNING SIGNS
+===================================== */
+
+.ar-warning-section {
+    margin-bottom: 30px;
+    padding: 28px;
+    background: #fff;
+    border: 1px solid var(--ar-border);
+    border-radius: 18px;
+}
+
+.ar-warning-heading {
+    margin-bottom: 22px;
+}
+
+.ar-warning-heading h2 {
+    margin: 8px 0 12px;
+    color: var(--ar-navy);
+    font-size: 22px;
+    font-weight: 800;
+}
+
+.ar-warning-heading p {
+    color: #52647a;
+    font-size: 14px;
+    line-height: 1.8;
+}
+
+.ar-warning-summary {
+    margin-bottom: 18px;
+    padding: 14px 17px;
+    background: #fff4e5;
+    border: 1px solid #f1d4a5;
+    border-radius: 11px;
+    color: #805000;
+    font-size: 14px;
+}
+
+.ar-warning-list {
+    display: grid;
+    gap: 16px;
+}
+
+.ar-warning-card {
+    padding: 21px;
+    background: #fbfcfe;
+    border: 1px solid var(--ar-border);
+    border-left: 4px solid #e8a126;
+    border-radius: 13px;
+}
+
+.ar-warning-card-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.ar-warning-card-heading h3 {
+    margin: 0;
+    color: var(--ar-navy);
+    font-size: 16px;
+    font-weight: 800;
+}
+
+.ar-warning-explanation {
+    margin: 0 0 16px;
+    color: #52647a;
+    font-size: 14px;
+    line-height: 1.8;
+}
+
+.ar-warning-evidence {
+    padding: 14px;
+    background: #fff;
+    border: 1px solid #e5eaf1;
+    border-radius: 10px;
+}
+
+.ar-warning-evidence strong {
+    display: block;
+    margin-bottom: 9px;
+    color: var(--ar-navy);
+    font-size: 12px;
+}
+
+.ar-warning-evidence blockquote {
+    margin: 0;
+    padding-left: 12px;
+    border-left: 3px solid #079b91;
+    color: #52647a;
+    font-size: 13px;
+    line-height: 1.8;
+    overflow-wrap: anywhere;
+}
+
+.ar-warning-empty {
+    padding: 20px;
+    background: #f1f8f5;
+    border: 1px solid #cce6d7;
+    border-radius: 12px;
+}
+
+.ar-warning-empty h3 {
+    margin: 0 0 10px;
+    color: #21633d;
+    font-size: 16px;
+}
+
+.ar-warning-empty p {
+    margin: 0;
+    color: #52647a;
+    font-size: 14px;
+    line-height: 1.8;
+}
+
+.ar-warning-disclaimer {
+    margin: 20px 0 0;
+    color: #718096;
+    font-size: 12px;
+    line-height: 1.7;
+}
+
+@media (max-width: 600px) {
+    .ar-warning-section {
+        padding: 19px;
+    }
+
+    .ar-warning-card {
+        padding: 16px;
+    }
+
+    .ar-warning-card-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}
+
 </style>
 <div class="ar-page">
     <main class="ar-shell">
@@ -1767,6 +1910,7 @@
     </div>
 
 
+   
     <!-- =====================================
          TEXT-BASED LIME EXPLANATION
     ====================================== -->
@@ -1778,36 +1922,85 @@
             <h3>Job description</h3>
 
             <p>
-    The words and phrases below influenced the model's assessment.
-    Each contribution indicates whether a phrase increased or
-    decreased the estimated fraud score.
-</p>
+                The words and phrases below influenced the model's assessment.
+                Features are separated according to whether they increased
+                or decreased the estimated fraud score.
+            </p>
         </div>
     </div>
 
     {% if text_lime_summary.available %}
 
-        <div class="lime-table-wrapper">
-            <table class="lime-feature-table">
-                <thead>
-                    <tr>
-                        <th scope="col">Rank</th>
-                        <th scope="col">Phrase</th>
-                        <th scope="col">Contribution direction</th>
-                    </tr>
-                </thead>
+        <!-- Features increasing the fraud score -->
+        <h4>Features increasing the estimated fraud score</h4>
 
-                <tbody>
-                    {% for item in text_lime_summary.ranked_features %}
+        {% if text_lime_summary.increased_features %}
+
+            <div class="lime-table-wrapper">
+                <table class="lime-feature-table">
+                    <thead>
                         <tr>
-                            <td>{{ item.rank }}</td>
-                            <td>{{ item.feature }}</td>
-                            <td>{{ item.direction }}</td>
+                            <th scope="col">Rank</th>
+                            <th scope="col">Phrase</th>
+                            <th scope="col">Contribution direction</th>
                         </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                    </thead>
+
+                    <tbody>
+                        {% for item in text_lime_summary.increased_features %}
+                            <tr>
+                                <td>{{ item.rank }}</td>
+                                <td>{{ item.feature }}</td>
+                                <td>{{ item.direction }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+        {% else %}
+
+            <p class="lime-table-description">
+                No text features were identified as increasing the estimated fraud score.
+            </p>
+
+        {% endif %}
+
+
+        <!-- Features decreasing the fraud score -->
+        <h4>Features decreasing the estimated fraud score</h4>
+
+        {% if text_lime_summary.decreased_features %}
+
+            <div class="lime-table-wrapper">
+                <table class="lime-feature-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Rank</th>
+                            <th scope="col">Phrase</th>
+                            <th scope="col">Contribution direction</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for item in text_lime_summary.decreased_features %}
+                            <tr>
+                                <td>{{ item.rank }}</td>
+                                <td>{{ item.feature }}</td>
+                                <td>{{ item.direction }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+        {% else %}
+
+            <p class="lime-table-description">
+                No text features were identified as decreasing the estimated fraud score.
+            </p>
+
+        {% endif %}
 
     {% else %}
 
@@ -1828,38 +2021,86 @@
         <div class="lime-feature-heading-content">
             <h3>Structured job listing information</h3>
 
-          <p>
-    The details below influenced the model's assessment. A feature
-    may increase or decrease the estimated fraud score. Missing or
-    unrecognised information may warrant further checks, but does
-    not by itself prove fraud.
-</p>
+            <p>
+                The structured details below influenced the model's assessment.
+                They are grouped according to whether they increased or
+                decreased the estimated fraud score.
+            </p>
         </div>
     </div>
 
     {% if structured_lime_summary.available %}
 
-        <div class="lime-table-wrapper">
-            <table class="lime-feature-table">
-                <thead>
-                    <tr>
-                        <th scope="col">Rank</th>
-                        <th scope="col">Job Listing detail</th>
-                        <th scope="col">Contribution direction</th>
-                    </tr>
-                </thead>
+        <!-- Structured features increasing the fraud score -->
+        <h4>Features increasing the estimated fraud score</h4>
 
-                <tbody>
-                    {% for item in structured_lime_summary.ranked_features %}
+        {% if structured_lime_summary.increased_features %}
+
+            <div class="lime-table-wrapper">
+                <table class="lime-feature-table">
+                    <thead>
                         <tr>
-                            <td>{{ item.rank }}</td>
-                            <td>{{ item.feature }}</td>
-                            <td>{{ item.direction }}</td>
+                            <th scope="col">Rank</th>
+                            <th scope="col">Job listing detail</th>
+                            <th scope="col">Contribution direction</th>
                         </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                    </thead>
+
+                    <tbody>
+                        {% for item in structured_lime_summary.increased_features %}
+                            <tr>
+                                <td>{{ item.rank }}</td>
+                                <td>{{ item.feature }}</td>
+                                <td>{{ item.direction }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+        {% else %}
+
+            <p class="lime-table-description">
+                No structured features were identified as increasing the estimated fraud score.
+            </p>
+
+        {% endif %}
+
+
+        <!-- Structured features decreasing the fraud score -->
+        <h4>Features decreasing the estimated fraud score</h4>
+
+        {% if structured_lime_summary.decreased_features %}
+
+            <div class="lime-table-wrapper">
+                <table class="lime-feature-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Rank</th>
+                            <th scope="col">Job listing detail</th>
+                            <th scope="col">Contribution direction</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for item in structured_lime_summary.decreased_features %}
+                            <tr>
+                                <td>{{ item.rank }}</td>
+                                <td>{{ item.feature }}</td>
+                                <td>{{ item.direction }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+        {% else %}
+
+            <p class="lime-table-description">
+                No structured features were identified as decreasing the estimated fraud score.
+            </p>
+
+        {% endif %}
 
     {% else %}
 
@@ -1869,9 +2110,123 @@
 
     {% endif %}
 
+
+    <!-- LIME EXPLANATION DISCLAIMER -->
+    <div class="lime-intro-card">
+        <div class="lime-info-icon" aria-hidden="true">i</div>
+
+        <div class="lime-intro-content">
+            <h3>How to interpret these explanations</h3>
+
+            <p>
+                These explanations show how individual features contributed
+                to the model's prediction for this specific job advertisement.
+                They represent local approximations of the model's behaviour
+                and do not establish that a particular feature caused fraud.
+                The results should therefore be interpreted alongside the
+                overall assessment and independent employer verification.
+            </p>
+        </div>
+    </div>
+
 </section>
 
 <!-- END EXPLAINABLE AI SECTION -->
+
+<!-- =====================================
+     ACTUAL ADVERTISEMENT WARNING SIGNS
+====================================== -->
+
+<section class="ar-warning-section">
+
+    <div class="ar-warning-heading">
+        <span class="ar-eyebrow">ADVERTISEMENT ANALYSIS</span>
+
+        <h2 class="ar-section-heading">
+            Actual Advertisement Warning Signs
+        </h2>
+
+        <p>
+            AjiraSafe examines the wording and information contained
+            in the submitted advertisement to identify potential
+            warning signs.Where warning signs are identified, each finding is accompanied by the evidence or information that triggered the warning."
+        </p>
+    </div>
+
+    {% if advertisement_warning_signs.available %}
+
+        <div class="ar-warning-summary">
+            <strong>
+                {{ advertisement_warning_signs.count }}
+                potential warning sign(s) identified
+            </strong>
+        </div>
+
+        <div class="ar-warning-list">
+
+            {% for item in advertisement_warning_signs.items %}
+
+                <article class="ar-warning-card">
+
+                    <div class="ar-warning-card-heading">
+
+                        <h3>{{ item.title }}</h3>
+
+                        <span class="ar-pill ar-pill-warning">
+                            {{ item.severity }}
+                        </span>
+
+                    </div>
+
+                    <p class="ar-warning-explanation">
+                        {{ item.explanation }}
+                    </p>
+
+                    <div class="ar-warning-evidence">
+
+                        <strong>Supporting advertisement evidence</strong>
+
+                        <blockquote>
+                            {{ item.evidence }}
+                        </blockquote>
+
+                    </div>
+
+                </article>
+
+            {% endfor %}
+
+        </div>
+
+    {% else %}
+
+        <div class="ar-warning-empty">
+
+            <h3>No specific warning signs identified</h3>
+
+            <p>
+                The automated checks did not identify any of the
+                warning patterns currently monitored by AjiraSafe.
+                This does not guarantee that the advertisement is
+                legitimate. Applicants should still verify the
+                employer and job details independently.
+            </p>
+
+        </div>
+
+    {% endif %}
+
+    <p class="ar-warning-disclaimer">
+        These findings are generated using predefined
+        rule-based checks. They indicate potential concerns
+        and missing information, not definitive proof of fraud.
+        The checks may not identify every form of deceptive
+        recruitment practice.
+    </p>
+
+</section>
+
+<!-- END ADVERTISEMENT WARNING SIGNS -->
 
             <section class="ar-advice">
                 <h2>Recommended next steps</h2>

@@ -1508,6 +1508,7 @@ def dashboard(request):
                             website="",
                         ).first()
 
+    
                     # Create a new employer if no existing record matches.
                     if employer is None:
                         employer = Employer.objects.create(
@@ -1517,6 +1518,30 @@ def dashboard(request):
                             contact_email=contact_email,
                             contact_phone=contact_phone,
                             email_domain=None,
+                        )
+
+                    else:
+                        # Update existing employer information when new values are supplied.
+                        if employer_website:
+                            employer.website = employer_website
+
+                        if company_reg_number:
+                            employer.company_reg_number = company_reg_number
+
+                        if contact_email:
+                            employer.contact_email = contact_email
+
+                        if contact_phone:
+                            employer.contact_phone = contact_phone
+
+                        employer.save(
+                            update_fields=[
+                                "website",
+                                "company_reg_number",
+                                "contact_email",
+                                "contact_phone",
+                                "updated_at",
+                            ]
                         )
 
                     # Check whether this employer already has verification history.
@@ -1766,18 +1791,21 @@ def dashboard(request):
         context,
     )
 
-
 def build_applicant_lime_summary(lime_data, structured=False):
     """
-    Convert saved LIME output into a ranked, applicant-friendly table.
+    Convert saved LIME output into an applicant-friendly summary.
 
-    Features are ranked by absolute LIME weight, with the direction
-    derived from the sign of the actual saved weight.
-    Raw numerical weights are not included in the returned rows.
+    Features are ranked by the absolute magnitude of their actual
+    LIME weights. Contributions are also separated according to
+    whether they increased or decreased the estimated fraud probability.
+
+    Raw numerical weights are not exposed to applicants.
     """
     empty_summary = {
         "available": False,
         "ranked_features": [],
+        "increased_features": [],
+        "decreased_features": [],
     }
 
     if not isinstance(lime_data, dict):
@@ -1792,7 +1820,6 @@ def build_applicant_lime_summary(lime_data, structured=False):
         raw_feature = str(raw_feature).strip()
 
         if not structured:
-            # Keep the actual text term or phrase identified by LIME.
             return raw_feature
 
         if "=" in raw_feature:
@@ -1837,40 +1864,271 @@ def build_applicant_lime_summary(lime_data, structured=False):
 
         if weight > 0:
             direction = "Increases the estimated fraud probability"
+            direction_group = "increased"
         elif weight < 0:
             direction = "Decreases the estimated fraud probability"
+            direction_group = "decreased"
         else:
             direction = "No directional contribution"
+            direction_group = "neutral"
 
-        contributions.append((
-            abs(weight),
-            {
-                "feature": feature_label,
-                "direction": direction,
-            },
-        ))
+        contributions.append({
+            "magnitude": abs(weight),
+            "feature": feature_label,
+            "direction": direction,
+            "direction_group": direction_group,
+        })
 
-    # Rank by the magnitude of the actual LIME contribution.
+    # Rank all contributions by absolute LIME weight.
     contributions.sort(
-        key=lambda contribution: contribution[0],
+        key=lambda contribution: contribution["magnitude"],
         reverse=True,
     )
 
-    ranked_features = [
-        {
+    ranked_features = []
+    increased_features = []
+    decreased_features = []
+
+    for rank, contribution in enumerate(contributions, start=1):
+        feature_data = {
             "rank": rank,
-            **feature_data,
+            "feature": contribution["feature"],
+            "direction": contribution["direction"],
         }
-        for rank, (_, feature_data) in enumerate(
-            contributions,
-            start=1,
-        )
-    ]
+
+        ranked_features.append(feature_data)
+
+        if contribution["direction_group"] == "increased":
+            increased_features.append(feature_data)
+        elif contribution["direction_group"] == "decreased":
+            decreased_features.append(feature_data)
 
     return {
         "available": bool(ranked_features),
         "ranked_features": ranked_features,
+        "increased_features": increased_features,
+        "decreased_features": decreased_features,
     }
+
+def detect_advertisement_warning_signs(job):
+    """
+    Identify potential warning signs from the actual job advertisement.
+
+    This rule-based analysis is separate from the machine learning
+    prediction and LIME explanations. It does not independently
+    establish that an advertisement is fraudulent.
+    """
+
+    description = str(getattr(job, "description", "") or "")
+    title = str(getattr(job, "title", "") or "")
+    company_profile = str(
+        getattr(job, "company_profile", "") or ""
+    )
+    requirements = str(
+        getattr(job, "requirements", "") or ""
+    )
+    benefits = str(
+        getattr(job, "benefits", "") or ""
+    )
+
+    # Combine the advertisement's text for rule matching.
+    advertisement_text = " ".join([
+        title,
+        description,
+        requirements,
+        benefits,
+    ])
+
+    normalised_text = " ".join(
+        advertisement_text.split()
+    )
+
+    text_lower = normalised_text.casefold()
+
+    warning_signs = []
+
+    def add_warning(title, explanation, pattern):
+        """
+        Add a warning only when its supporting wording
+        is actually found in the advertisement.
+        """
+        match = re.search(
+            pattern,
+            normalised_text,
+            flags=re.IGNORECASE,
+        )
+
+        if match:
+            # Extract the sentence containing the matched wording.
+            start = normalised_text.rfind(".", 0, match.start()) + 1
+            end = normalised_text.find(".", match.end())
+
+            if end == -1:
+                end = len(normalised_text)
+
+            evidence = normalised_text[start:end].strip()
+
+            warning_signs.append({
+                "title": title,
+                "explanation": explanation,
+                "evidence": evidence,
+                "severity": "High concern",
+            })
+
+    # 1. Upfront recruitment or registration fees.
+    add_warning(
+        "Upfront payment request",
+        (
+            "The advertisement appears to request payment "
+            "as a condition of securing or obtaining employment."
+        ),
+        (
+            r"(?:registration|processing|application|recruitment|"
+            r"training)\s+(?:and\s+)?(?:registration\s+|processing\s+)?"
+            r"fees?|"
+            r"(?:pay|send|transfer)\s+(?:an?\s+)?(?:upfront\s+)?"
+            r"(?:fee|payment|money)"
+        ),
+    )
+
+    # 2. Guaranteed or immediate employment promises.
+    add_warning(
+        "Guaranteed employment promise",
+        (
+            "The advertisement promises guaranteed or immediate "
+            "employment, which may pressure applicants to act "
+            "without sufficient verification."
+        ),
+        (
+            r"guaranteed\s+(?:employment|job|placement)|"
+            r"immediate\s+(?:employment|job|placement)|"
+            r"guaranteed\s+employment\s+immediately"
+        ),
+    )
+
+    # 3. High earnings combined with no experience.
+    earnings_claim = re.search(
+        r"(?:kes\s*)?[\d,]+\s*(?:per\s+)?(?:week|weekly)",
+        normalised_text,
+        flags=re.IGNORECASE,
+    )
+
+    no_experience_claim = re.search(
+        r"no\s+(?:prior\s+)?experience\s+(?:required|needed)|"
+        r"without\s+(?:any\s+)?experience|"
+        r"no\s+experience\s+required",
+        normalised_text,
+        flags=re.IGNORECASE,
+    )
+
+    if earnings_claim and no_experience_claim:
+        warning_signs.append({
+            "title": "Weekly earnings claim with no experience required",
+            "explanation": (
+                "The advertisement combines a weekly earnings claim "
+                "with a statement that no prior experience is required. "
+                "Applicants should independently verify the advertised "
+                "compensation and employment terms."
+            ),
+            "evidence": (
+                earnings_claim.group(0)
+                + " ... "
+                + no_experience_claim.group(0)
+            ),
+            "severity": "Warning sign",
+        })
+
+
+   
+   
+    # 4. Limited employer background information.
+    # Check both the advertisement and the saved employer record.
+
+    company_background_pattern = (
+        r"\b(?:company|organisation|organization|employer|business|"
+        r"institution|bank|firm|corporation)\b"
+        r".{0,200}\b(?:provides|providing|offers|offering|"
+        r"specialises|specializes|operates|operating|"
+        r"delivers|delivering|was established|was founded)\b"
+        r"|"
+        r"\b(?:is|was)\s+(?:a|an)\s+"
+        r"[\w-]+\s+(?:company|institution|organisation|"
+        r"organization|bank|business|corporation)\b"
+    )
+
+    employer = getattr(job, "employer", None)
+
+    employer_details_available = bool(
+        employer and any([
+            getattr(employer, "website", ""),
+            getattr(employer, "company_reg_number", ""),
+            getattr(employer, "contact_email", ""),
+            getattr(employer, "contact_phone", ""),
+        ])
+    )
+
+    has_company_background = bool(
+        company_profile.strip()
+        or re.search(
+            company_background_pattern,
+            normalised_text,
+            flags=re.IGNORECASE,
+        )
+        or employer_details_available
+    )
+
+    if not has_company_background:
+        warning_signs.append({
+            "title": "Limited employer background information",
+            "explanation": (
+                "No meaningful company profile, employer background "
+                "description or employer contact and identification "
+                "details were provided. Applicants should independently "
+                "establish the employer's identity."
+            ),
+            "evidence": (
+                "No company profile or matching employer background "
+                "description was identified, and no employer "
+                "verification details were recorded."
+            ),
+            "severity": "Information missing",
+        })
+
+    # 5. WhatsApp contact combined with immediate placement.
+    whatsapp_contact = re.search(
+        r"whatsapp",
+        text_lower,
+    )
+
+    immediate_placement = re.search(
+        r"immediate\s+(?:job\s+)?placement|"
+        r"contact\s+us\s+for\s+placement|"
+        r"contact\s+us\s+immediately",
+        text_lower,
+    )
+
+    if whatsapp_contact and immediate_placement:
+        warning_signs.append({
+            "title": "Informal recruitment contact",
+            "explanation": (
+                "The advertisement combines WhatsApp contact "
+                "with an immediate-placement request. Applicants "
+                "should verify the recruiter through independently "
+                "sourced employer contact details."
+            ),
+            "evidence": (
+                "WhatsApp contact is requested alongside "
+                "an immediate-placement statement."
+            ),
+            "severity": "Warning sign",
+        })
+
+    return {
+        "available": bool(warning_signs),
+        "count": len(warning_signs),
+        "items": warning_signs,
+    }
+
 
 @login_required(login_url="login")
 @never_cache
@@ -1941,6 +2199,14 @@ def assessment_results(request, result_id):
         explanation_payload.get("structured_lime"),
         structured=True,
     )
+
+
+    # Detect warning signs directly from the actual advertisement.
+    # This analysis is independent of the ML and LIME explanations.
+    advertisement_warning_signs = detect_advertisement_warning_signs(
+        result.job
+    )
+
 
     # Convert the stored probability to a percentage for display.
     probability_percent = (
@@ -2048,6 +2314,7 @@ def assessment_results(request, result_id):
         "explanation": explanation,
         "text_lime_summary": text_lime_summary,
         "structured_lime_summary": structured_lime_summary,
+        "advertisement_warning_signs": advertisement_warning_signs,
         "fraud_probability_percent": probability_percent,
         "risk_level_display": risk_level_display,
         "risk_interpretation": risk_interpretation,

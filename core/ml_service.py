@@ -16,7 +16,7 @@ MODEL_DIR = BASE_DIR / "ml_pipeline" / "models"
 
 # Load the saved model artifacts
 model = joblib.load(
-    MODEL_DIR / "calibrated_random_forest_model.joblib"
+    MODEL_DIR / "calibrated_rf_model.joblib"
 )
 text_preprocessor = joblib.load(MODEL_DIR / "text_preprocessor.joblib")
 structured_preprocessor = joblib.load(
@@ -48,19 +48,13 @@ STRUCTURED_COLUMNS = [
     "industry",
     "function",
 ]
-
 COMPLETENESS_COLUMNS = [
-    "title",
     "location",
-    "company_profile",
-    "description",
-    "requirements",
     "employment_type",
     "required_experience",
     "required_education",
     "industry",
 ]
-
 URGENCY_KEYWORDS = [
     "urgent hiring",
     "apply immediately",
@@ -282,9 +276,13 @@ def prepare_job_features(job_data):
     # Match the notebook's missing-value behavior:
     # blank strings become missing values for completeness scoring.
     completeness_df = job_df[COMPLETENESS_COLUMNS].copy()
+
+    # Treat blank form values as missing.
     completeness_df = completeness_df.replace(
-        r"^\s*$", float("nan"), regex=True
+        r"^\s*$", np.nan, regex=True
     )
+
+    
 
     # Calculate engineered features.
     engineered = pd.DataFrame(index=job_df.index)
@@ -297,9 +295,8 @@ def prepare_job_features(job_data):
     engineered["missing_information_score"] = (
         completeness_df.isna().mean(axis=1)
     )
+    # Normalise categorical fields before model preprocessing.
 
-    # Convert structured Boolean fields into booleans.
-          # Normalise categorical fields before model preprocessing.
     for column in categorical_columns:
         job_df[column] = job_df[column].map(
             lambda value: normalize_categorical_value(value, column)
@@ -485,13 +482,15 @@ def explain_job_lime(job_data, num_features=12, num_samples=1000):
     structured_row = normalize_boolean_columns(structured_row)
 
     structured_row = structured_row.iloc[0]
-    # Calculate the original missing-information score.
+        # Calculate the original missing-information score.
     completeness_df = job_df[COMPLETENESS_COLUMNS].copy()
-    completeness_df = completeness_df.replace(
-        r"^\s*$", float("nan"), regex=True
-    )
-    missing_score = float(completeness_df.isna().mean(axis=1).iloc[0])
 
+    # Treat blank form values as missing.
+    completeness_df = completeness_df.replace(
+        r"^\s*$", np.nan, regex=True
+    )
+
+    missing_score = float(completeness_df.isna().mean(axis=1).iloc[0])
     engineered_row = pd.Series({
         "missing_information_score": missing_score
     })
@@ -553,7 +552,7 @@ def encode_structured_row(structured_row):
             categories = category_values[column]
 
             if pd.isna(value) or str(value).strip() == "":
-                value = "Missing"
+             value = "__MISSING__"
             else:
                 value = str(value)
 
@@ -619,7 +618,7 @@ def decode_structured_rows(encoded_rows, original_job_data=None):
 
                     row[column] = (
                         np.nan
-                        if category in ("__MISSING__", "Missing")
+                        if category in ("__MISSING__", "__UNSEEN__")
                         else category
                     )
 
