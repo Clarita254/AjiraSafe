@@ -1,4 +1,4 @@
-from unittest import result
+
 
 from django.shortcuts import render, redirect
 
@@ -18,6 +18,7 @@ from django.http import (
     JsonResponse,
     FileResponse,
     Http404,
+    request,
 )
 from django.urls import reverse
 from django.db import transaction
@@ -27,7 +28,7 @@ from django.views.csrf import csrf_failure as django_csrf_failure
 from django.views.decorators.cache import never_cache
 from django.db.models import OuterRef, Prefetch, Subquery, Q
 from core.models import TestimonialDecisionLog
-from django.db.models import Prefetch
+
 from .models import (
     Testimonial,
     JobApplicant,
@@ -37,11 +38,16 @@ from .models import (
     JobAdvertisement,
     EmployerVerificationRecord,
     SuspiciousJobReport,
+    SystemActivity,
     MLModel,
     AnalysisResult,
     RiskAssessment,
     Explanation,
+    UserAccountFlag,
+
 )
+
+from .activity_logger import log_system_activity
 from django.core.paginator import Paginator
 
 from django.shortcuts import get_object_or_404
@@ -55,7 +61,7 @@ import re
 import json
 import math
 from decimal import Decimal
-from urllib.parse import urlparse
+from urllib.parse import urlencode, urlparse
 from .ml_service import (
     assess_job,
     explain_job_lime,
@@ -139,8 +145,7 @@ def about(request):
     )
 
 
-# =========================================================
-# TESTIMONIALS
+
 @login_required(login_url="login")
 @require_POST
 def testimonial_action(request, testimonial_id, action):
@@ -163,25 +168,111 @@ def testimonial_action(request, testimonial_id, action):
         )
         return redirect("admin_dashboard")
 
-    if action not in ("review", "approve", "reject"):
+    # Validate the requested action.
+    if action not in ("review", "approve", "reject", "undo"):
         return HttpResponseForbidden("Invalid feedback action.")
 
     with transaction.atomic():
+
         testimonial = get_object_or_404(
             Testimonial.objects.select_for_update(),
             pk=testimonial_id
         )
 
-        # Block changes only after a final decision has been made.
+        # Capture the previous feedback state before making changes.
+        previous_status = testimonial.status
+        previous_is_approved = testimonial.is_approved
+        previous_admin_comment = testimonial.admin_comment or ""
+
+        # -------------------------------------------------
+        # UNDO A FINAL DECISION
+        # -------------------------------------------------
+        if action == "undo":
+            if testimonial.status != Testimonial.Status.APPROVED:
+                messages.warning(
+                    request,
+                    "Only feedback with a final decision can be restored."
+                )
+                return redirect("admin_dashboard")
+
+            reason = request.POST.get("reason", "").strip()
+
+            if not reason:
+                messages.error(
+                    request,
+                    "Please provide a reason for undoing this decision."
+                )
+                return redirect("admin_dashboard")
+
+            # Preserve the original decision history.
+            TestimonialDecisionLog.objects.create(
+                testimonial=testimonial,
+                administrator=administrator,
+                action="undo",
+                previous_status=testimonial.status,
+                previous_is_approved=testimonial.is_approved,
+                new_status=Testimonial.Status.UNDER_REVIEW,
+                new_is_approved=False,
+                reason=reason
+            )
+
+            # Restore the feedback to Under Review.
+            testimonial.status = Testimonial.Status.UNDER_REVIEW
+            testimonial.is_approved = False
+            testimonial.reviewed_by = administrator
+            testimonial.reviewed_at = timezone.now()
+            testimonial.admin_comment = (
+                f"Previous decision reversed. Reason: {reason}"
+            )
+            testimonial.save()
+
+            # Record the reversal in System Activities.
+            log_system_activity(
+                actor=request.user,
+                category="feedback",
+                action="Feedback decision reversed",
+                description=(
+                    f"Administrator {request.user.get_username()} "
+                    f"reversed the final decision for feedback "
+                    f"#{testimonial.pk}."
+                ),
+                target_type="Testimonial",
+                target_id=testimonial.pk,
+                previous_value=(
+                    f"Status: {previous_status}; "
+                    f"Published: {previous_is_approved}"
+                ),
+                new_value=(
+                    f"Status: {testimonial.status}; "
+                    f"Published: {testimonial.is_approved}"
+                ),
+                metadata={
+                    "administrator": request.user.get_username(),
+                    "reason": reason,
+                    "previous_admin_comment": previous_admin_comment,
+                    "new_admin_comment": testimonial.admin_comment,
+                    "action": "undo",
+                }
+            )
+
+            messages.success(
+                request,
+                "Decision reversed. Feedback returned to Under Review."
+            )
+
+            return redirect("admin_dashboard")
+
+        # -------------------------------------------------
+        # PREVENT CHANGES AFTER A FINAL DECISION
+        # -------------------------------------------------
         if testimonial.status == Testimonial.Status.APPROVED:
             messages.warning(
                 request,
-                "A final decision has already been recorded for "
-                "this feedback. It cannot be changed."
+                "A final decision has already been recorded. "
+                "Use Undo Decision to reopen this feedback."
             )
             return redirect("admin_dashboard")
 
-        # Actions are allowed while pending or under review.
         if testimonial.status not in (
             Testimonial.Status.PENDING,
             Testimonial.Status.UNDER_REVIEW,
@@ -192,8 +283,11 @@ def testimonial_action(request, testimonial_id, action):
             )
             return redirect("admin_dashboard")
 
-        # Mark as Under Review only when currently pending.
+        # -------------------------------------------------
+        # MARK AS UNDER REVIEW
+        # -------------------------------------------------
         if action == "review":
+
             if testimonial.status != Testimonial.Status.PENDING:
                 messages.warning(
                     request,
@@ -203,49 +297,80 @@ def testimonial_action(request, testimonial_id, action):
 
             testimonial.status = Testimonial.Status.UNDER_REVIEW
             testimonial.is_approved = False
-            testimonial.reviewed_by = administrator
-            testimonial.reviewed_at = timezone.now()
-            testimonial.admin_comment = request.POST.get(
-                "admin_comment", ""
-            ).strip()
-            testimonial.save()
 
-            messages.success(
-                request,
-                "Feedback marked as Under Review."
-            )
+            message = "Feedback marked as Under Review."
 
-        # Approve feedback for publication.
+            activity_action = "Feedback marked as Under Review"
+            new_feedback_state = "Under Review"
+
+        # -------------------------------------------------
+        # APPROVE FOR PUBLICATION
+        # -------------------------------------------------
         elif action == "approve":
+
             testimonial.status = Testimonial.Status.APPROVED
             testimonial.is_approved = True
-            testimonial.reviewed_by = administrator
-            testimonial.reviewed_at = timezone.now()
-            testimonial.admin_comment = request.POST.get(
-                "admin_comment", ""
-            ).strip()
-            testimonial.save()
 
-            messages.success(
-                request,
-                "Feedback approved for publication."
-            )
+            message = "Feedback approved for publication."
 
-        # Finalise the feedback and keep it private.
+            activity_action = "Feedback approved for publication"
+            new_feedback_state = "Approved and published"
+
+        # -------------------------------------------------
+        # REJECT AND KEEP PRIVATE
+        # -------------------------------------------------
         elif action == "reject":
+
             testimonial.status = Testimonial.Status.APPROVED
             testimonial.is_approved = False
-            testimonial.reviewed_by = administrator
-            testimonial.reviewed_at = timezone.now()
-            testimonial.admin_comment = request.POST.get(
-                "admin_comment", ""
-            ).strip()
-            testimonial.save()
 
-            messages.success(
-                request,
-                "Feedback finalised and kept private."
-            )
+            message = "Feedback finalised and kept private."
+
+            activity_action = "Feedback rejected and kept private"
+            new_feedback_state = "Finalised and kept private"
+
+        # Save the administrator's review details.
+        testimonial.reviewed_by = administrator
+        testimonial.reviewed_at = timezone.now()
+        testimonial.admin_comment = request.POST.get(
+            "admin_comment", ""
+        ).strip()
+
+        testimonial.save()
+
+        # -------------------------------------------------
+        # RECORD FEEDBACK ACTIVITY
+        # -------------------------------------------------
+        log_system_activity(
+            actor=request.user,
+            category="feedback",
+            action=activity_action,
+            description=(
+                f"Administrator {request.user.get_username()} "
+                f"processed feedback #{testimonial.pk}."
+            ),
+            target_type="Testimonial",
+            target_id=testimonial.pk,
+            previous_value=(
+                f"Status: {previous_status}; "
+                f"Published: {previous_is_approved}"
+            ),
+            new_value=(
+                f"Status: {testimonial.status}; "
+                f"Published: {testimonial.is_approved}; "
+                f"Result: {new_feedback_state}"
+            ),
+            metadata={
+                "administrator": request.user.get_username(),
+                "feedback_category": testimonial.category,
+                "rating": testimonial.rating,
+                "previous_admin_comment": previous_admin_comment,
+                "new_admin_comment": testimonial.admin_comment,
+                "action": action,
+            }
+        )
+
+        messages.success(request, message)
 
     return redirect("admin_dashboard")
 
@@ -656,7 +781,23 @@ def signup(request):
                 user=user,
                 phone_number=international_phone_number
             )
+            # =================================================
+            # RECORD USER REGISTRATION
+            # =================================================
 
+            log_system_activity(
+                actor=user,
+                category="user_management",
+                action="Account registered",
+                description=(
+                    f"{user.get_full_name() or user.username} "
+                    "registered a new AjiraSafe account."
+                ),
+                target_type="User",
+                target_id=user.id,
+                previous_value="No account",
+                new_value="Registered and active"
+            )
             # =================================================
             # LOG USER IN
             # =================================================
@@ -714,57 +855,24 @@ def signup(request):
 @never_cache
 def login_view(request):
 
-    # =====================================================
     # OPEN LOGIN PAGE
-    # =====================================================
-
     if request.method == "GET":
-
-        # Clear old messages whenever the login page
-        # is opened normally.
         list(messages.get_messages(request))
+        return render(request, "core/login.html")
 
-        return render(
-            request,
-            "core/login.html"
-        )
-
-
-    # =====================================================
     # GET LOGIN FORM DATA
-    # =====================================================
+    email = request.POST.get("email", "").strip().lower()
+    password = request.POST.get("password", "")
 
-    email = request.POST.get(
-        "email",
-        ""
-    ).strip().lower()
-
-    password = request.POST.get(
-        "password",
-        ""
-    )
-
-    # =====================================================
     # VALIDATE REQUIRED FIELDS
-    # =====================================================
-
-    # These checks are also performed on the server.
-    # JavaScript validation on the page is only for
-    # immediate user feedback.
-
     if not email:
-
         return render(
             request,
             "core/login.html",
-            {
-                "email_required": True,
-            }
+            {"email_required": True}
         )
 
-
     if not password:
-
         return render(
             request,
             "core/login.html",
@@ -774,11 +882,7 @@ def login_view(request):
             }
         )
 
-
-    # =====================================================
     # FIND ACCOUNT BY EMAIL
-    # =====================================================
-
     account = User.objects.filter(
         email__iexact=email
     ).first()
@@ -786,87 +890,91 @@ def login_view(request):
     user = None
 
     if account is not None:
-
         user = authenticate(
             request,
             username=account.get_username(),
             password=password
         )
 
-
-    # =====================================================
     # VALIDATE LOGIN CREDENTIALS
-    # =====================================================
-
-    # Unknown email, incorrect password,
-    # or inactive account all receive the same
-    # generic error message.
-
     if (
         account is None
         or user is None
         or not user.is_active
     ):
+        log_system_activity(
+            actor=None,
+            category="authentication",
+            action="Login failed",
+            description=(
+                "A login attempt failed because the credentials "
+                "were invalid or the account was inactive."
+            ),
+            target_type="User" if account is not None else "",
+            target_id=account.id if account is not None else "",
+            previous_value="Unauthenticated",
+            new_value="Login unsuccessful",
+            metadata={
+                "reason": "Invalid credentials or inactive account"
+            }
+        )
 
         return render(
             request,
             "core/login.html",
-            {
-                "invalid_credentials": True,
-            }
+            {"invalid_credentials": True}
         )
 
-
-    # =====================================================
     # DETERMINE USER ROLE
-    # =====================================================
-
     if user.groups.filter(
         name="System Administrator"
     ).exists():
-
         dashboard_name = "admin_dashboard"
-
 
     elif user.groups.filter(
         name="Job Applicant"
     ).exists():
-
         dashboard_name = "dashboard"
 
-
     else:
-
         return render(
             request,
             "core/login.html",
-            {
-                "invalid_credentials": True,
-            }
+            {"invalid_credentials": True}
         )
 
-
-    # =====================================================
     # LOG USER IN
-    # =====================================================
+    login(request, user)
 
-    login(
-        request,
-        user
+    # RECORD SUCCESSFUL AUTHENTICATION
+    log_system_activity(
+        actor=user,
+        category="authentication",
+        action="User logged in",
+        description=(
+            f"{user.get_full_name() or user.username} "
+            "successfully logged into AjiraSafe."
+        ),
+        target_type="User",
+        target_id=user.id,
+        previous_value="Logged out",
+        new_value="Authenticated",
+        metadata={
+            "user_role": (
+                "System Administrator"
+                if user.groups.filter(
+                    name="System Administrator"
+                ).exists()
+                else "Job Applicant"
+            )
+        }
     )
 
-
-    # Keep authentication limited to the current browser session.
+    # KEEP AUTHENTICATION LIMITED TO CURRENT BROWSER SESSION
     request.session.set_expiry(0)
 
-
-    # =====================================================
     # REDIRECT TO APPROPRIATE DASHBOARD
-    # =====================================================
-
-    return redirect(
-        dashboard_name
-    )
+    return redirect(dashboard_name)
 
 # =========================================================
 # CSRF FAILURE
@@ -2067,11 +2175,26 @@ def admin_lime_explanation(request, result_id):
 @never_cache
 def logout_view(request):
 
+    # Capture the authenticated user before ending the session.
+    if request.user.is_authenticated:
+
+        log_system_activity(
+            actor=request.user,
+            category="authentication",
+            action="User logged out",
+            description=(
+                f"{request.user.get_full_name() or request.user.username} "
+                "successfully logged out of AjiraSafe."
+            ),
+            target_type="User",
+            target_id=request.user.id,
+            previous_value="Authenticated",
+            new_value="Logged out"
+        )
+
     logout(request)
 
     return redirect("login")
-
-
  
 # =========================================================
 # SYSTEM ADMINISTRATOR DASHBOARD
@@ -2172,22 +2295,29 @@ def admin_dashboard(request):
 
     # All registered users for Manage Users.
     user_queryset = (
-        User.objects
-        .prefetch_related("groups")
-        .select_related("account_flag")
-        .order_by("-date_joined")
+    User.objects
+    .prefetch_related(
+        "groups",
+       
     )
+    .select_related("account_flag")
+    .order_by("-date_joined")
+)
+    
 
-    # Search by name, username, or email.
+    # Search by full name, partial name, username, or email.
     user_search = request.GET.get("user_search", "").strip()
 
     if user_search:
-        user_queryset = user_queryset.filter(
-            Q(username__icontains=user_search)
-            | Q(first_name__icontains=user_search)
-            | Q(last_name__icontains=user_search)
-            | Q(email__icontains=user_search)
-        )
+        search_terms = user_search.split()
+
+        for term in search_terms:
+            user_queryset = user_queryset.filter(
+                Q(username__icontains=term)
+                | Q(first_name__icontains=term)
+                | Q(last_name__icontains=term)
+                | Q(email__icontains=term)
+            )
 
     # Filter by an existing Django group.
     user_role = request.GET.get("user_role", "").strip()
@@ -2217,6 +2347,7 @@ def admin_dashboard(request):
 
     # Existing groups are displayed as role filters.
     user_role_choices = Group.objects.order_by("name")
+
     # Recent testimonials for the Overview section.
     recent_testimonials = Testimonial.objects.select_related(
         "user"
@@ -2264,12 +2395,21 @@ def admin_dashboard(request):
             "verified_by__user",
         ).order_by("-verification_date")[:5]
     )
-         # Recent job analysis results.
+            # Recent job analysis results.
     recent_analysis_results = (
         AnalysisResult.objects
         .select_related("job", "job__employer", "model")
         .order_by("-analysis_date")[:10]
     )
+
+    # Recent system activities for the System Activities section.
+    system_activities = (
+        SystemActivity.objects
+        .select_related("actor")
+        .order_by("-created_at")[:100]
+    )
+
+    total_system_activities = SystemActivity.objects.count()
     # Dashboard context.
     context = {
         "total_users": total_users,
@@ -2305,6 +2445,8 @@ def admin_dashboard(request):
         "recent_employers": recent_employers,
         "recent_verifications": recent_verifications,
         "recent_analysis_results": recent_analysis_results,
+        "system_activities": system_activities,
+"total_system_activities": total_system_activities,
         
     }
 
@@ -2314,8 +2456,6 @@ def admin_dashboard(request):
         "core/AdminDashboard.html",
         context,
     )
-
-
 # =========================================================
 # ADMINISTRATOR USER ACCOUNT MANAGEMENT
 # =========================================================
@@ -2324,6 +2464,23 @@ def admin_dashboard(request):
 @require_POST
 @never_cache
 def manage_user_account(request, user_id):
+
+    def redirect_to_user_management():
+        query = {"tab": "users"}
+
+        page = request.GET.get("user_page", "1").strip()
+        if page.isdigit():
+            query["user_page"] = page
+
+        for key in ("user_search", "user_role", "user_status"):
+            value = request.GET.get(key, "").strip()
+            if value:
+                query[key] = value
+
+        return redirect(
+            f"{reverse('admin_dashboard')}?{urlencode(query)}"
+            "#registered-accounts"
+        )
 
     # Only System Administrators may manage accounts.
     if not request.user.groups.filter(
@@ -2355,7 +2512,7 @@ def manage_user_account(request, user_id):
             request,
             "You cannot deactivate your own administrator account."
         )
-        return redirect("admin_dashboard")
+        return redirect_to_user_management()
 
     # Do not allow the last active administrator to be deactivated.
     if (
@@ -2375,12 +2532,33 @@ def manage_user_account(request, user_id):
                 request,
                 "The last active administrator cannot be deactivated."
             )
-            return redirect("admin_dashboard")
+            return redirect_to_user_management()
 
+  
     if action == "activate":
+
+        previous_status = (
+            "Active" if target_user.is_active else "Inactive"
+        )
 
         target_user.is_active = True
         target_user.save(update_fields=["is_active"])
+
+        if previous_status == "Inactive":
+
+            log_system_activity(
+                actor=request.user,
+                category="user_management",
+                action="Account activated",
+                description=(
+                    f"Administrator activated the account "
+                    f"belonging to {target_user.username}."
+                ),
+                target_type="User",
+                target_id=target_user.id,
+                previous_value="Inactive",
+                new_value="Active"
+            )
 
         messages.success(
             request,
@@ -2389,14 +2567,36 @@ def manage_user_account(request, user_id):
 
     elif action == "deactivate":
 
+        previous_status = (
+            "Active" if target_user.is_active else "Inactive"
+        )
+
         target_user.is_active = False
         target_user.save(update_fields=["is_active"])
+
+        if previous_status == "Active":
+
+            log_system_activity(
+                actor=request.user,
+                category="user_management",
+                action="Account deactivated",
+                description=(
+                    f"Administrator deactivated the account "
+                    f"belonging to {target_user.username}."
+                ),
+                target_type="User",
+                target_id=target_user.id,
+                previous_value="Active",
+                new_value="Inactive"
+            )
 
         messages.success(
             request,
             f"{target_user.username} has been deactivated."
         )
 
+   
+ 
     elif action == "flag":
 
         reason = request.POST.get("reason", "").strip()
@@ -2406,7 +2606,7 @@ def manage_user_account(request, user_id):
                 request,
                 "Please provide a reason for flagging this account."
             )
-            return redirect("admin_dashboard")
+            return redirect_to_user_management()
 
         account_flag, created = UserAccountFlag.objects.get_or_create(
             user=target_user
@@ -2417,7 +2617,7 @@ def manage_user_account(request, user_id):
                 request,
                 "This account is already flagged."
             )
-            return redirect("admin_dashboard")
+            return redirect_to_user_management()
 
         account_flag.is_flagged = True
         account_flag.reason = reason
@@ -2427,6 +2627,11 @@ def manage_user_account(request, user_id):
         account_flag.cleared_at = None
 
         account_flag.save()
+
+        messages.success(
+            request,
+            f"{target_user.username} has been flagged for administrator attention."
+        )
 
         messages.success(
             request,
@@ -2445,12 +2650,13 @@ def manage_user_account(request, user_id):
                 request,
                 "This account is not currently flagged."
             )
-            return redirect("admin_dashboard")
+            return redirect_to_user_management()
 
         account_flag.is_flagged = False
         account_flag.cleared_by = administrator
         account_flag.cleared_at = timezone.now()
         account_flag.save()
+       
 
         messages.success(
             request,
@@ -2463,7 +2669,7 @@ def manage_user_account(request, user_id):
             "Invalid account management action."
         )
 
-    return redirect("admin_dashboard")
+    return redirect_to_user_management()
 
 @login_required(login_url="login")
 @require_POST
@@ -2580,6 +2786,14 @@ def employer_verification_action(request, employer_id):
                 status=409
             )
 
+     
+        # Capture the previous verification status for the activity log.
+        previous_status = (
+            latest_verification.verification_status
+            if latest_verification
+            else "No previous verification"
+        )
+
         # Create a new record to preserve verification history.
         EmployerVerificationRecord.objects.create(
             employer=locked_employer,
@@ -2588,6 +2802,29 @@ def employer_verification_action(request, employer_id):
             verification_date=timezone.now(),
             remarks=remarks,
             applicant_review_summary=applicant_review_summary,
+        )
+
+        # Record the verification decision in System Activities.
+        log_system_activity(
+            actor=request.user,
+            category="employer_verification",
+            action="Employer verification decision recorded",
+            description=(
+                f"Administrator {request.user.get_username()} "
+                f"recorded a verification decision for "
+                f"{locked_employer.company_name}."
+            ),
+            target_type="Employer",
+            target_id=locked_employer.employer_id,
+            previous_value=(
+                valid_statuses.get(previous_status, previous_status)
+            ),
+            new_value=valid_statuses[new_status],
+            metadata={
+                "administrator": request.user.get_username(),
+                "remarks": remarks,
+                "applicant_review_summary": applicant_review_summary,
+            }
         )
 
     # Return a success response without redirecting.
@@ -2691,6 +2928,10 @@ def reopen_employer_verification(request, employer_id):
                 status=409
             )
 
+       
+        # Capture the previous final decision before reopening.
+        previous_status = latest_verification.verification_status
+
         # Create a new pending record; do not alter previous records.
         EmployerVerificationRecord.objects.create(
             employer=locked_employer,
@@ -2702,6 +2943,35 @@ def reopen_employer_verification(request, employer_id):
             remarks=f"Verification reopened. Reason: {reopening_reason}",
             applicant_review_summary="",
         )
+
+        # Record the reopening event in System Activities.
+        valid_statuses = dict(
+            EmployerVerificationRecord.VerificationStatus.choices
+        )
+
+        log_system_activity(
+            actor=request.user,
+            category="employer_verification",
+            action="Employer verification reopened",
+            description=(
+                f"Administrator {request.user.get_username()} "
+                f"reopened verification for "
+                f"{locked_employer.company_name}."
+            ),
+            target_type="Employer",
+            target_id=locked_employer.employer_id,
+            previous_value=valid_statuses.get(
+                previous_status, previous_status
+            ),
+            new_value=valid_statuses[
+                EmployerVerificationRecord.VerificationStatus.PENDING
+            ],
+            metadata={
+                "administrator": request.user.get_username(),
+                "reopening_reason": reopening_reason,
+            }
+        )
+
 
     return JsonResponse(
         {
@@ -2754,6 +3024,11 @@ def testimonial_action(request, testimonial_id, action):
             pk=testimonial_id
         )
 
+        # Capture the previous feedback state before making changes.
+        previous_status = testimonial.status
+        previous_is_approved = testimonial.is_approved
+        previous_admin_comment = testimonial.admin_comment or ""
+
         # -------------------------------------------------
         # UNDO A FINAL DECISION
         # -------------------------------------------------
@@ -2775,7 +3050,7 @@ def testimonial_action(request, testimonial_id, action):
                 )
                 return redirect("admin_dashboard")
 
-            # Save the previous state before restoring the feedback.
+            # Preserve the original decision history.
             TestimonialDecisionLog.objects.create(
                 testimonial=testimonial,
                 administrator=administrator,
@@ -2795,8 +3070,36 @@ def testimonial_action(request, testimonial_id, action):
             testimonial.admin_comment = (
                 f"Previous decision reversed. Reason: {reason}"
             )
-
             testimonial.save()
+
+            # Record the reversal in System Activities.
+            log_system_activity(
+                actor=request.user,
+                category="feedback",
+                action="Feedback decision reversed",
+                description=(
+                    f"Administrator {request.user.get_username()} "
+                    f"reversed the final decision for feedback "
+                    f"#{testimonial.pk}."
+                ),
+                target_type="Testimonial",
+                target_id=testimonial.pk,
+                previous_value=(
+                    f"Status: {previous_status}; "
+                    f"Published: {previous_is_approved}"
+                ),
+                new_value=(
+                    f"Status: {testimonial.status}; "
+                    f"Published: {testimonial.is_approved}"
+                ),
+                metadata={
+                    "administrator": request.user.get_username(),
+                    "reason": reason,
+                    "previous_admin_comment": previous_admin_comment,
+                    "new_admin_comment": testimonial.admin_comment,
+                    "action": "undo",
+                }
+            )
 
             messages.success(
                 request,
@@ -2842,6 +3145,8 @@ def testimonial_action(request, testimonial_id, action):
             testimonial.is_approved = False
 
             message = "Feedback marked as Under Review."
+            activity_action = "Feedback marked as Under Review"
+            new_feedback_state = "Under Review"
 
         # -------------------------------------------------
         # APPROVE FOR PUBLICATION
@@ -2852,9 +3157,11 @@ def testimonial_action(request, testimonial_id, action):
             testimonial.is_approved = True
 
             message = "Feedback approved for publication."
+            activity_action = "Feedback approved for publication"
+            new_feedback_state = "Approved and published"
 
         # -------------------------------------------------
-        # KEEP PRIVATE
+        # REJECT AND KEEP PRIVATE
         # -------------------------------------------------
         elif action == "reject":
 
@@ -2862,7 +3169,10 @@ def testimonial_action(request, testimonial_id, action):
             testimonial.is_approved = False
 
             message = "Feedback finalised and kept private."
+            activity_action = "Feedback rejected and kept private"
+            new_feedback_state = "Finalised and kept private"
 
+        # Save the administrator's review details.
         testimonial.reviewed_by = administrator
         testimonial.reviewed_at = timezone.now()
         testimonial.admin_comment = request.POST.get(
@@ -2870,6 +3180,38 @@ def testimonial_action(request, testimonial_id, action):
         ).strip()
 
         testimonial.save()
+
+        # -------------------------------------------------
+        # RECORD FEEDBACK ACTIVITY
+        # -------------------------------------------------
+        log_system_activity(
+            actor=request.user,
+            category="feedback",
+            action=activity_action,
+            description=(
+                f"Administrator {request.user.get_username()} "
+                f"processed feedback #{testimonial.pk}."
+            ),
+            target_type="Testimonial",
+            target_id=testimonial.pk,
+            previous_value=(
+                f"Status: {previous_status}; "
+                f"Published: {previous_is_approved}"
+            ),
+            new_value=(
+                f"Status: {testimonial.status}; "
+                f"Published: {testimonial.is_approved}; "
+                f"Result: {new_feedback_state}"
+            ),
+            metadata={
+                "administrator": request.user.get_username(),
+                "feedback_category": testimonial.category,
+                "rating": testimonial.rating,
+                "previous_admin_comment": previous_admin_comment,
+                "new_admin_comment": testimonial.admin_comment,
+                "action": action,
+            }
+        )
 
         messages.success(request, message)
 
@@ -2920,7 +3262,6 @@ def suspicious_job_report_action(request, report_id):
             f"{reverse('admin_dashboard')}?tab=reports"
         )
 
-  
     # Lock the report while its status is being updated.
     with transaction.atomic():
 
@@ -2940,8 +3281,6 @@ def suspicious_job_report_action(request, report_id):
                 f"{reverse('admin_dashboard')}?tab=reports"
             )
 
-   
-
         # Require an administrative comment when resolving a report.
         if (
             new_status == SuspiciousJobReport.Status.RESOLVED
@@ -2955,6 +3294,11 @@ def suspicious_job_report_action(request, report_id):
             return redirect(
                 f"{reverse('admin_dashboard')}?tab=reports"
             )
+
+        # Capture the previous values before updating the report.
+        previous_status = report.status
+        previous_admin_comment = report.admin_comment
+
         # Update the report and preserve the administrator's review details.
         report.status = new_status
         report.reviewed_by = administrator
@@ -2970,6 +3314,46 @@ def suspicious_job_report_action(request, report_id):
             ]
         )
 
+        # Record the administrative activity only when
+        # the status or comment has actually changed.
+        if (
+            previous_status != new_status
+            or previous_admin_comment != admin_comment
+        ):
+
+            # Determine the activity action.
+            if new_status == SuspiciousJobReport.Status.RESOLVED:
+                activity_action = "Suspicious report resolved"
+
+            elif previous_status != new_status:
+                activity_action = "Suspicious report status updated"
+
+            else:
+                activity_action = "Suspicious report review updated"
+
+            # Record the activity in the central system activity log.
+            log_system_activity(
+                actor=request.user,
+                category="suspicious_reports",
+                action=activity_action,
+                description=(
+                    f"Administrator {request.user.get_username()} "
+                    f"updated suspicious job report #{report.report_id}."
+                ),
+                target_type="Suspicious Job Report",
+                target_id=report.report_id,
+                previous_value=(
+                    f"Status: {valid_statuses.get(previous_status, previous_status)}"
+                ),
+                new_value=(
+                    f"Status: {valid_statuses.get(new_status, new_status)}"
+                ),
+                metadata={
+                    "previous_admin_comment": previous_admin_comment or "",
+                    "new_admin_comment": admin_comment,
+                }
+            )
+
     messages.success(
         request,
         f"Suspicious job report #{report.report_id} "
@@ -2979,8 +3363,6 @@ def suspicious_job_report_action(request, report_id):
     return redirect(
         f"{reverse('admin_dashboard')}?tab=reports"
     )
-
-
 
 @login_required(login_url="login")
 @require_GET

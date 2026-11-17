@@ -381,7 +381,7 @@
         </p>
     </div>
 
-    <section class="admin-content-section admin-table-card">
+    <section class="admin-content-section admin-table-card" id="registered-accounts">
 
         <div class="admin-table-heading">
             <div>
@@ -394,7 +394,7 @@
 
         <!-- SEARCH AND FILTERS -->
         <form method="GET"
-              action="{% url 'admin_dashboard' %}"
+              action="{% url 'admin_dashboard' %}#registered-accounts"
               class="admin-user-filter-form">
 
             <input
@@ -406,7 +406,9 @@
             >
 
             <select name="user_role" aria-label="Filter by role">
-                <option value="">All roles</option>
+    <option value="" {% if not user_role %}selected{% endif %}>
+    All roles
+</option>
 
                 {% for role in user_role_choices %}
                     <option
@@ -436,7 +438,7 @@
                 Search
             </button>
 
-            <a href="{% url 'admin_dashboard' %}"
+            <a href="{% url 'admin_dashboard' %}?tab=users#registered-accounts"
                class="admin-secondary-button">
                 Clear filters
             </a>
@@ -470,7 +472,7 @@
                                     {{ account.get_full_name|default:account.username }}
                                 </strong>
                                 <br>
-                                <small>@{{ account.username }}</small>
+                                <small>{{ account.username }}</small>
                             </td>
 
                             <td>{{ account.email|default:"—" }}</td>
@@ -503,21 +505,77 @@
                                 {% endif %}
                             </td>
 
-                            <td>
-                                {% if account.account_flag.is_flagged %}
-                                    <span class="admin-status-pill danger">
-                                        Flagged
-                                    </span>
-                                    <br>
-                                    <small>
-                                        {{ account.account_flag.reason }}
-                                    </small>
-                                {% else %}
-                                    <span class="admin-status-pill muted">
-                                        Not flagged
-                                    </span>
-                                {% endif %}
-                            </td>
+                            
+<td>
+    {% if account.account_flag.is_flagged %}
+        <span class="admin-status-pill danger">
+            Flagged
+        </span>
+    {% else %}
+        <span class="admin-status-pill muted">
+            Not flagged
+        </span>
+    {% endif %}
+
+    {% if account.account_flag.flagged_at %}
+        <details class="account-flag-history">
+            <summary>View flag history</summary>
+
+            <div class="account-flag-history-details">
+
+                <strong>Flagging information</strong>
+
+                <p>
+                    <strong>Reason:</strong>
+                    {{ account.account_flag.reason|default:"Not provided" }}
+                </p>
+
+                <p>
+                    <strong>Flagged by:</strong>
+                    {% if account.account_flag.flagged_by %}
+                        {{ account.account_flag.flagged_by.user.get_full_name|default:account.account_flag.flagged_by.user.username }}
+                    {% else %}
+                        Not recorded
+                    {% endif %}
+                </p>
+
+                <p>
+                    <strong>Flagged on:</strong>
+                    {{ account.account_flag.flagged_at|date:"d M Y, H:i" }}
+                </p>
+
+                <hr>
+
+                <strong>Unflagging information</strong>
+
+                <p>
+                    <strong>Cleared by:</strong>
+                    {% if account.account_flag.cleared_by %}
+                        {{ account.account_flag.cleared_by.user.get_full_name|default:account.account_flag.cleared_by.user.username }}
+                    {% else %}
+                        Not yet cleared
+                    {% endif %}
+                </p>
+
+                <p>
+                    <strong>Cleared on:</strong>
+                    {% if account.account_flag.cleared_at %}
+                        {{ account.account_flag.cleared_at|date:"d M Y, H:i" }}
+                    {% else %}
+                        Not yet cleared
+                    {% endif %}
+                </p>
+
+            </div>
+        </details>
+
+    {% else %}
+        <br>
+        <small>No flag history available.</small>
+    {% endif %}
+
+</td>
+
 
                             <td>
                                 <div class="admin-user-actions">
@@ -525,14 +583,14 @@
                                     {% if account.is_active %}
 
                                         <form method="POST"
-                                              action="{% url 'manage_user_account' account.id %}">
+                                              action="{% url 'manage_user_account' account.id %}?tab=users&amp;user_page={{ all_users.number }}&amp;user_search={{ user_search|urlencode }}&amp;user_role={{ user_role|urlencode }}&amp;user_status={{ user_status|urlencode }}">
                                             {% csrf_token %}
                                             <input type="hidden"
                                                    name="action"
                                                    value="deactivate">
 
                                             <button type="submit"
-                                                    class="admin-secondary-button"
+                                                    class="admin-secondary-button admin-user-deactivate-button"
                                                     {% if account.id == request.user.id %}disabled{% endif %}>
                                                 Deactivate
                                             </button>
@@ -541,14 +599,14 @@
                                     {% else %}
 
                                         <form method="POST"
-                                              action="{% url 'manage_user_account' account.id %}">
+                                              action="{% url 'manage_user_account' account.id %}?tab=users&amp;user_page={{ all_users.number }}&amp;user_search={{ user_search|urlencode }}&amp;user_role={{ user_role|urlencode }}&amp;user_status={{ user_status|urlencode }}">
                                             {% csrf_token %}
                                             <input type="hidden"
                                                    name="action"
                                                    value="activate">
 
                                             <button type="submit"
-                                                    class="admin-primary-button">
+                                                    class="admin-primary-button admin-user-activate-button">
                                                 Activate
                                             </button>
                                         </form>
@@ -558,14 +616,14 @@
                                     {% if account.account_flag.is_flagged %}
 
                                         <form method="POST"
-                                              action="{% url 'manage_user_account' account.id %}">
+                                              action="{% url 'manage_user_account' account.id %}?tab=users&amp;user_page={{ all_users.number }}&amp;user_search={{ user_search|urlencode }}&amp;user_role={{ user_role|urlencode }}&amp;user_status={{ user_status|urlencode }}">
                                             {% csrf_token %}
                                             <input type="hidden"
                                                    name="action"
                                                    value="unflag">
 
                                             <button type="submit"
-                                                    class="admin-secondary-button">
+                                                    class="admin-secondary-button admin-user-clear-flag-button">
                                                 Clear flag
                                             </button>
                                         </form>
@@ -573,7 +631,7 @@
                                     {% else %}
 
                                         <form method="POST"
-                                              action="{% url 'manage_user_account' account.id %}"
+                                              action="{% url 'manage_user_account' account.id %}?tab=users&amp;user_page={{ all_users.number }}&amp;user_search={{ user_search|urlencode }}&amp;user_role={{ user_role|urlencode }}&amp;user_status={{ user_status|urlencode }}"
                                               class="admin-flag-form">
 
                                             {% csrf_token %}
@@ -591,7 +649,7 @@
                                             >
 
                                             <button type="submit"
-                                                    class="admin-danger-button">
+                                                    class="admin-danger-button admin-user-flag-button">
                                                 Flag account
                                             </button>
 
@@ -623,7 +681,7 @@
             <div class="admin-pagination">
 
                 {% if all_users.has_previous %}
-                    <a href="?user_page={{ all_users.previous_page_number }}&user_search={{ user_search|urlencode }}&user_role={{ user_role|urlencode }}&user_status={{ user_status|urlencode }}&tab=users">
+                    <a href="?user_page={{ all_users.previous_page_number }}&user_search={{ user_search|urlencode }}&user_role={{ user_role|urlencode }}&user_status={{ user_status|urlencode }}&tab=users#registered-accounts">
                         Previous
                     </a>
                 {% endif %}
@@ -634,7 +692,7 @@
                 </span>
 
                 {% if all_users.has_next %}
-                    <a href="?user_page={{ all_users.next_page_number }}&user_search={{ user_search|urlencode }}&user_role={{ user_role|urlencode }}&user_status={{ user_status|urlencode }}&tab=users">
+                    <a href="?user_page={{ all_users.next_page_number }}&user_search={{ user_search|urlencode }}&user_role={{ user_role|urlencode }}&user_status={{ user_status|urlencode }}&tab=users#registered-accounts">
                         Next
                     </a>
                 {% endif %}
@@ -1462,27 +1520,178 @@
             </section>
         </section>
 
-        <!-- SYSTEM ACTIVITIES -->
-        <section class="admin-panel" data-admin-panel="activity" hidden>
+       
+<!-- SYSTEM ACTIVITIES -->
+<section class="admin-panel" data-admin-panel="activity" hidden>
 
-            <div class="admin-panel-heading">
-                <p class="admin-eyebrow">SYSTEM OVERSIGHT</p>
-                <h1>System activities</h1>
-                <p>Monitor important administrative and platform events.</p>
+    <div class="admin-panel-heading">
+        <p class="admin-eyebrow">SYSTEM OVERSIGHT</p>
+        <h1>System activities</h1>
+        <p>Monitor important administrative and platform events.</p>
+    </div>
+
+    <!-- Activity Summary -->
+    <div class="admin-stats-grid">
+        <div class="admin-stat-card">
+            <div class="admin-stat-info">
+                <p>Total recorded activities</p>
+                <h2>{{ total_system_activities }}</h2>
             </div>
+            <span class="admin-stat-icon">◷</span>
+        </div>
+    </div>
+
+    <!-- Activity Log -->
+    <div class="admin-section-card">
+
+        <div class="admin-section-heading">
+            <div>
+                <h2>Activity log</h2>
+                <p>
+                    A chronological record of important actions performed
+                    across the AjiraSafe platform.
+                </p>
+            </div>
+        </div>
+
+        {% if system_activities %}
+
+<div class="activity-filters">
+
+    <div class="activity-search">
+        <input
+            type="search"
+            id="activitySearch"
+            placeholder="Search by user, action, record or description..."
+        >
+    </div>
+
+    <div class="activity-category-filter">
+        <select id="activityCategory">
+            <option value="">All categories</option>
+            <option value="user_management">User Management</option>
+
+            <option value="suspicious_reports">Suspicious Reports</option>
+            <option value="employer_verification">Employer Verification</option>
+            <option value="feedback">Feedback and Testimonials</option>
+            <option value="authentication">Authentication</option>
+            <option value="other">Other</option>
+        </select>
+    </div>
+
+</div>
+
+
+            <div class="admin-table-wrapper activity-table-wrapper"
+                 role="region"
+                 aria-label="System activity log"
+                 tabindex="0">
+                <table class="admin-table activity-table" aria-label="Recent system activities">
+                    <thead>
+                        <tr>
+                            <th scope="col">Date and time</th>
+                            <th scope="col">Administrator / User</th>
+                            <th scope="col">Category</th>
+                            <th scope="col">Action</th>
+                            <th scope="col">Affected record</th>
+                            <th scope="col">Description</th>
+                            <th scope="col">Change details</th>
+                        </tr>
+                    </thead>
+
+
+<tbody>
+    {% for activity in system_activities %}
+        <tr
+            class="activity-row"
+            data-category="{{ activity.category }}"
+            data-search="{{ activity.actor_username|lower }} {{ activity.action|lower }} {{ activity.description|lower }} {{ activity.target_type|lower }} {{ activity.target_id|lower }} {{ activity.previous_value|lower }} {{ activity.new_value|lower }}"
+        >
+            <td class="activity-date-cell">
+                <strong>
+                    {{ activity.created_at|date:"d M Y" }}
+                </strong>
+
+                <small>{{ activity.created_at|date:"H:i:s" }}</small>
+            </td>
+
+            <td class="activity-actor-cell">
+                {{ activity.actor_username|default:"System" }}
+            </td>
+
+            <td>
+                <span class="activity-category">
+                    {{ activity.get_category_display }}
+                </span>
+            </td>
+
+            <td>
+                <span class="activity-action">{{ activity.action }}</span>
+            </td>
+
+            <td class="activity-record-cell">
+                {% if activity.target_type %}
+                    <span class="activity-record-type">{{ activity.target_type }}</span>
+                    {% if activity.target_id %}
+                        <span class="activity-record-id">#{{ activity.target_id }}</span>
+                    {% endif %}
+                {% else %}
+                    —
+                {% endif %}
+            </td>
+
+            <td class="activity-description-cell">
+                {{ activity.description|default:"No additional description"|truncatechars:120 }}
+            </td>
+
+            <td class="activity-changes-cell">
+                {% if activity.previous_value or activity.new_value %}
+                    {% if activity.previous_value %}
+                        <div class="activity-change activity-change-before">
+                            <strong>Previous</strong>
+                            <span>{{ activity.previous_value|truncatechars:70 }}</span>
+                        </div>
+                    {% endif %}
+
+                    {% if activity.new_value %}
+                        <div class="activity-change activity-change-after">
+                            <strong>New</strong>
+                            <span>{{ activity.new_value|truncatechars:70 }}</span>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    —
+                {% endif %}
+            </td>
+        </tr>
+    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <p class="admin-table-footer">
+                Showing the latest {{ system_activities|length }}
+                recorded activities. Historical entries are read-only.
+            </p>
+
+        {% else %}
 
             <div class="admin-empty-feature">
                 <span class="admin-empty-icon blue">◷</span>
-                <h2>Activity logging is not configured yet</h2>
+                <h2>No activities recorded yet</h2>
                 <p>
-                    Reliable activity monitoring requires an activity-log
-                    model and event recording for actions such as report
-                    status changes, employer verification updates, and
-                    feedback reviews.
+                    Important system events will appear here as users
+                    register, administrators manage accounts, and
+                    platform activities are performed.
                 </p>
             </div>
 
-        </section>
+        {% endif %}
+
+    </div>
+
+</section>
+
 
     </main>
 </div>
@@ -1499,7 +1708,7 @@ document.addEventListener("DOMContentLoaded", function () {
         ".admin-panel[data-admin-panel]"
     );
 
-    function showAdminPanel(name) {
+    function showAdminPanel(name, options) {
 
         panels.forEach(function (panel) {
             const active = panel.dataset.adminPanel === name;
@@ -1518,10 +1727,12 @@ document.addEventListener("DOMContentLoaded", function () {
             );
         });
 
-        window.scrollTo({
-            top: 0,
-            behavior: "smooth"
-        });
+        if (!options || options.scrollToTop !== false) {
+            window.scrollTo({
+                top: 0,
+                behavior: "smooth"
+            });
+        }
     }
 
     buttons.forEach(function (button) {
@@ -1551,11 +1762,28 @@ const validTabs = [
     "activity"
 ];
 
-showAdminPanel(
-    validTabs.includes(requestedTab)
-        ? requestedTab
-        : "overview"
-);    
+const initialTab = validTabs.includes(requestedTab)
+    ? requestedTab
+    : "overview";
+
+showAdminPanel(initialTab, {
+    scrollToTop: initialTab !== "users"
+});
+
+if (initialTab === "users") {
+    const registeredAccounts = document.getElementById(
+        "registered-accounts"
+    );
+
+    if (registeredAccounts) {
+        window.requestAnimationFrame(function () {
+            registeredAccounts.scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+        });
+    }
+}
 
     const employerCards = Array.from(
         document.querySelectorAll("[data-employer-card]")
@@ -2126,7 +2354,49 @@ document.querySelectorAll(".admin-toast").forEach(function (toast) {
         });
     });
 
-});
+   
+
+
+   
+
+    // SYSTEM ACTIVITY SEARCH AND FILTER
+
+    const searchInput = document.getElementById("activitySearch");
+    const categoryFilter = document.getElementById("activityCategory");
+    const activityRows = document.querySelectorAll(".activity-row");
+
+    function filterActivities() {
+        const searchValue = searchInput
+            ? searchInput.value.trim().toLowerCase()
+            : "";
+
+        const selectedCategory = categoryFilter
+            ? categoryFilter.value
+            : "";
+
+        activityRows.forEach(function (row) {
+            const searchableText = row.dataset.search || "";
+            const rowCategory = row.dataset.category || "";
+
+            const matchesSearch = searchableText.includes(searchValue);
+            const matchesCategory =
+                !selectedCategory || rowCategory === selectedCategory;
+
+            row.style.display =
+                matchesSearch && matchesCategory ? "" : "none";
+        });
+    }
+
+    if (searchInput) {
+        searchInput.addEventListener("input", filterActivities);
+    }
+
+    if (categoryFilter) {
+        categoryFilter.addEventListener("change", filterActivities);
+    }
+
+}); // Closes the original DOMContentLoaded listener
+
 </script>
 
 {% endblock %}

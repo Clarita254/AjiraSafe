@@ -72,20 +72,65 @@ AjiraSafe | Testimonials
 
         {% if testimonials %}
 
+            <div class="testimonials-toolbar" data-testimonials-toolbar>
+                <div class="testimonials-results" aria-live="polite">
+                    <strong data-testimonials-count>{{ testimonials|length }}</strong>
+                    <span>approved experience{{ testimonials|length|pluralize }}</span>
+                </div>
+
+                <div class="testimonials-filters">
+                    <label class="testimonials-search">
+                        <span class="visually-hidden">Search testimonials</span>
+                        <input
+                            type="search"
+                            data-testimonials-search
+                            placeholder="Search experiences or names..."
+                            autocomplete="off"
+                        >
+                    </label>
+
+                    <label class="testimonials-rating-filter">
+                        <span class="visually-hidden">Filter by rating</span>
+                        <select data-testimonials-rating>
+                            <option value="">All ratings</option>
+                            <option value="5">5 stars</option>
+                            <option value="4">4 stars</option>
+                            <option value="3">3 stars</option>
+                            <option value="2">2 stars</option>
+                            <option value="1">1 star</option>
+                        </select>
+                    </label>
+
+                    <button class="testimonials-clear-filter" type="button" data-testimonials-clear>
+                        Clear
+                    </button>
+                </div>
+            </div>
+
             <div class="testimonials-grid">
 
                 {% for testimonial in testimonials %}
 
-                    <article class="testimonial-card">
+                    <article
+                        class="testimonial-card"
+                        data-testimonial-card
+                        data-rating="{{ testimonial.rating }}"
+                        data-search="{{ testimonial.feedback|striptags }} {{ testimonial.display_name }} {{ testimonial.role }}"
+                    >
 
                         <div class="testimonial-top">
 
                             <div class="testimonial-stars"
-                                 aria-label="5 star rating">
-                                ★★★★★
+                                 role="img"
+                                 aria-label="{{ testimonial.rating }} out of 5 stars">
+                                <span aria-hidden="true" {% if testimonial.rating < 1 %}class="is-unfilled"{% endif %}>★</span>
+                                <span aria-hidden="true" {% if testimonial.rating < 2 %}class="is-unfilled"{% endif %}>★</span>
+                                <span aria-hidden="true" {% if testimonial.rating < 3 %}class="is-unfilled"{% endif %}>★</span>
+                                <span aria-hidden="true" {% if testimonial.rating < 4 %}class="is-unfilled"{% endif %}>★</span>
+                                <span aria-hidden="true" {% if testimonial.rating < 5 %}class="is-unfilled"{% endif %}>★</span>
                             </div>
 
-                            <span class="testimonial-quote">
+                            <span class="testimonial-quote" aria-hidden="true">
                                 “
                             </span>
 
@@ -129,6 +174,9 @@ AjiraSafe | Testimonials
 
             </div>
 
+            <p class="testimonials-no-results" data-testimonials-no-results role="status" hidden>
+                No testimonials match your search. Try another name, keyword, or rating.
+            </p>
 
         {% else %}
 
@@ -174,6 +222,52 @@ AjiraSafe | Testimonials
     </div>
 
 </section>
+
+{% if testimonials %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const toolbar = document.querySelector("[data-testimonials-toolbar]");
+    if (!toolbar) return;
+
+    const searchInput = toolbar.querySelector("[data-testimonials-search]");
+    const ratingSelect = toolbar.querySelector("[data-testimonials-rating]");
+    const clearButton = toolbar.querySelector("[data-testimonials-clear]");
+    const count = toolbar.querySelector("[data-testimonials-count]");
+    const cards = Array.from(document.querySelectorAll("[data-testimonial-card]"));
+    const noResults = document.querySelector("[data-testimonials-no-results]");
+
+    function filterTestimonials() {
+        const searchTerm = searchInput.value.trim().toLocaleLowerCase();
+        const selectedRating = ratingSelect.value;
+        let visibleCount = 0;
+
+        cards.forEach(function (card) {
+            const matchesSearch = card.dataset.search
+                .toLocaleLowerCase()
+                .includes(searchTerm);
+            const matchesRating = !selectedRating
+                || card.dataset.rating === selectedRating;
+            const isVisible = matchesSearch && matchesRating;
+
+            card.hidden = !isVisible;
+            if (isVisible) visibleCount += 1;
+        });
+
+        count.textContent = visibleCount;
+        noResults.hidden = visibleCount !== 0;
+    }
+
+    searchInput.addEventListener("input", filterTestimonials);
+    ratingSelect.addEventListener("change", filterTestimonials);
+    clearButton.addEventListener("click", function () {
+        searchInput.value = "";
+        ratingSelect.value = "";
+        filterTestimonials();
+        searchInput.focus();
+    });
+});
+</script>
+{% endif %}
 
 
 <!-- =====================================================

@@ -2,7 +2,12 @@ from django.contrib.auth.models import Group, User
 from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 
-from core.models import JobApplicant, Testimonial
+from core.models import (
+    JobApplicant,
+    SystemAdministrator,
+    Testimonial,
+    UserAccountFlag,
+)
 
 
 class DashboardAuthenticationTests(SimpleTestCase):
@@ -68,6 +73,82 @@ class PublicTestimonialsTests(TestCase):
             full_page_response,
             "This testimonial is not approved",
         )
+
+
+class ManageUserAccountTests(TestCase):
+    def setUp(self):
+        administrator_group = Group.objects.create(
+            name="System Administrator"
+        )
+        applicant_group = Group.objects.create(name="Job Applicant")
+
+        self.administrator = User.objects.create_user(
+            username="account-admin",
+            email="account-admin@example.com",
+            password="Admin-password-123",
+        )
+        self.administrator.groups.add(administrator_group)
+        SystemAdministrator.objects.create(user=self.administrator)
+
+        self.applicant = User.objects.create_user(
+            username="flagged-applicant",
+            email="flagged-applicant@example.com",
+            password="Applicant-password-123",
+        )
+        self.applicant.groups.add(applicant_group)
+        JobApplicant.objects.create(
+            user=self.applicant,
+            phone_number="1234567890",
+        )
+
+    def test_account_action_returns_to_filtered_manage_users_section(self):
+        self.client.force_login(self.administrator)
+
+        response = self.client.post(
+            (
+                f"{reverse('manage_user_account', args=[self.applicant.pk])}"
+                "?user_page=2&user_search=Applicant"
+                "&user_role=Job%20Applicant&user_status=active"
+            ),
+            {
+                "action": "flag",
+                "reason": "Requires administrator attention",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            response.url,
+            (
+                f"{reverse('admin_dashboard')}?tab=users&user_page=2"
+                "&user_search=Applicant&user_role=Job+Applicant"
+                "&user_status=active#registered-accounts"
+            ),
+        )
+        self.assertTrue(self.applicant.account_flag.is_flagged)
+
+    def test_flagged_applicant_can_still_log_in_and_access_dashboard(self):
+        UserAccountFlag.objects.create(
+            user=self.applicant,
+            is_flagged=True,
+            reason="Requires administrator attention",
+        )
+
+        login_response = self.client.post(
+            reverse("login"),
+            {
+                "email": self.applicant.email,
+                "password": "Applicant-password-123",
+            },
+        )
+
+        self.assertRedirects(
+            login_response,
+            reverse("dashboard"),
+            fetch_redirect_response=False,
+        )
+        dashboard_response = self.client.get(reverse("dashboard"))
+        self.assertEqual(dashboard_response.status_code, 200)
 
 
 class AssessmentFormValidationTests(TestCase):

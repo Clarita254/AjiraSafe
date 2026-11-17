@@ -4,6 +4,7 @@ from .models import (
     Testimonial,
     JobApplicant,
     SystemAdministrator,
+    SystemActivity,
     Employer,
     JobAdvertisement,
     EmployerVerificationRecord,
@@ -172,3 +173,57 @@ class ExplanationAdmin(admin.ModelAdmin):
     list_filter = ("method", "created_at")
     search_fields = ("explanation_text", "key_contribution_features")
     ordering = ("-created_at",)
+
+
+
+
+
+@admin.register(SystemActivity)
+class SystemActivityAdmin(admin.ModelAdmin):
+
+    list_display = (
+        "created_at",
+        "actor_username",
+        "category",
+        "action",
+        "target_type",
+        "target_id",
+    )
+
+    list_filter = (
+        "category",
+        "created_at",
+    )
+
+    search_fields = (
+        "actor_username",
+        "action",
+        "description",
+        "target_type",
+        "target_id",
+    )
+
+    readonly_fields = (
+        "actor",
+        "actor_username",
+        "category",
+        "action",
+        "description",
+        "target_type",
+        "target_id",
+        "previous_value",
+        "new_value",
+        "metadata",
+        "created_at",
+    )
+
+    ordering = ("-created_at",)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False

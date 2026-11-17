@@ -549,3 +549,117 @@ class UserAccountFlag(models.Model):
     def __str__(self):
         status = "Flagged" if self.is_flagged else "Not flagged"
         return f"{self.user.username} - {status}"
+
+
+# =========================================================
+# SYSTEM ACTIVITY LOG
+# =========================================================
+
+class SystemActivityQuerySet(models.QuerySet):
+
+    def update(self, **kwargs):
+
+        # Allow Django to clear the actor reference when
+        # a user account is deleted (SET_NULL).
+        if kwargs == {"actor": None}:
+            return super().update(**kwargs)
+
+        raise PermissionError(
+            "System activity records cannot be modified."
+        )
+
+    def delete(self):
+        raise PermissionError(
+            "System activity records cannot be deleted."
+        )
+class SystemActivityManager(models.Manager.from_queryset(SystemActivityQuerySet)):
+    pass
+
+
+class SystemActivity(models.Model):
+
+    class Category(models.TextChoices):
+        USER_MANAGEMENT = "user_management", "User Management"
+        ROLE_MANAGEMENT = "role_management", "Role Management"
+        SUSPICIOUS_REPORTS = "suspicious_reports", "Suspicious Reports"
+        EMPLOYER_VERIFICATION = "employer_verification", "Employer Verification"
+        FEEDBACK = "feedback", "Feedback and Testimonials"
+        AUTHENTICATION = "authentication", "Authentication"
+        OTHER = "other", "Other"
+
+    objects = SystemActivityManager()
+
+    actor = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="system_activities"
+    )
+
+    actor_username = models.CharField(
+        max_length=150,
+        blank=True
+    )
+
+    category = models.CharField(
+        max_length=30,
+        choices=Category.choices,
+        default=Category.OTHER
+    )
+
+    action = models.CharField(max_length=100)
+
+    description = models.TextField(blank=True)
+
+    target_type = models.CharField(
+        max_length=100,
+        blank=True
+    )
+
+    target_id = models.CharField(
+        max_length=100,
+        blank=True
+    )
+
+    previous_value = models.TextField(blank=True)
+
+    new_value = models.TextField(blank=True)
+
+    metadata = models.JSONField(default=dict, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(
+                fields=["category", "-created_at"],
+                name="activity_category_date_idx"
+            ),
+            models.Index(
+                fields=["actor", "-created_at"],
+                name="activity_actor_date_idx"
+            ),
+        ]
+
+    def save(self, *args, **kwargs):
+
+        if self.pk and type(self).objects.filter(pk=self.pk).exists():
+            raise PermissionError(
+                "Existing system activity records cannot be modified."
+            )
+
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise PermissionError(
+            "System activity records cannot be deleted."
+        )
+
+    def __str__(self):
+        return (
+            f"{self.action} - "
+            f"{self.actor_username} - "
+            f"{self.created_at}"
+        )
